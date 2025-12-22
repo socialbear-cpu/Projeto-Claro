@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Logins - Controle EPO</title>
+    <link rel="stylesheet" href="./main.css">
+</head>
+<body>
+    <div class="header">
+        <p>Gerenciar Logins</p>
+    </div>
+
+    <div class="principal">
+        <!-- Top Bar com Filtros -->
+        <div class="top-bar">
+            <button id="toggleFiltersBtn" class="filter-toggle" aria-expanded="false">Filtros ▾</button>
+            <div class="top-filters">
+                <input type="search" id="searchInput" placeholder="Pesquisar usuário...">
+            </div>
+            <button id="addUserBtn" class="filter-toggle" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; border: none;">
+                ➕ Novo Usuário
+            </button>
+        </div>
+
+        <!-- Filters Panel (EPOs) -->
+        <div id="filtersPanel" class="filters-panel" aria-hidden="true">
+            <!-- Preenchido dinamicamente -->
+        </div>
+
+        <!-- Users Container -->
+        <div id="usersContainer" class="records-container">
+            <!-- Usuários serão renderizados aqui -->
+        </div>
+    </div>
+
+    <!-- Modal de Adicionar/Editar Usuário -->
+    <div id="userFormModal" class="form-modal">
+        <div class="form-modal-content">
+            <span class="modal-close" data-modal="userFormModal">×</span>
+            <h2 id="formTitle">Novo Usuário</h2>
+            
+            <form id="userForm">
+                <div class="form-group">
+                    <label for="userName">Nome Completo *</label>
+                    <input type="text" id="userName" name="userName" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="userEmail">Email *</label>
+                    <input type="email" id="userEmail" name="userEmail" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="userPassword">Senha *</label>
+                    <input type="password" id="userPassword" name="userPassword" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="userRole">Função *</label>
+                    <select id="userRole" name="userRole" required>
+                        <option value="">Selecione uma função</option>
+                        <option value="Admin">Administrador</option>
+                        <option value="Operador">Operador</option>
+                        <option value="Visualizador">Visualizador</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="userEpo">EPO Atribuída</label>
+                    <select id="userEpo" name="userEpo">
+                        <option value="">Selecione uma EPO (opcional para Admin)</option>
+                        <option value="RMS">RMS</option>
+                        <option value="INOVA">INOVA</option>
+                        <option value="MVVS">MVVS</option>
+                        <option value="TELMINAS">TELMINAS</option>
+                        <option value="BELMATEC">BELMATEC</option>
+                        <option value="CARSO">CARSO</option>
+                        <option value="GLOBAL">GLOBAL</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="userStatus">Status *</label>
+                    <select id="userStatus" name="userStatus" required>
+                        <option value="">Selecione um status</option>
+                        <option value="Ativo">Ativo</option>
+                        <option value="Inativo">Inativo</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="userNotes">Notas</label>
+                    <textarea id="userNotes" name="userNotes" rows="3" style="resize: vertical;"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-submit">Salvar Usuário</button>
+                    <button type="button" class="btn-cancel" data-modal="userFormModal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="./main.js"></script>
+    <script>
+        // ============================================================
+        // GERENCIAMENTO DE LOGINS COM FILTRO POR EPO
+        // ============================================================
+
+        let allUsers = [];
+        let currentEditingIndex = -1;
+
+        // Estrutura de usuário
+        class User {
+            constructor(name, email, password, role, epo, status, notes = '') {
+                this.name = name;
+                this.email = email;
+                this.password = password; // Em produção, usar hash seguro
+                this.role = role;
+                this.epo = epo;
+                this.status = status;
+                this.notes = notes;
+                this.createdAt = new Date().toISOString();
+                this.lastLogin = null;
+            }
+        }
+
+        // ============================================================
+        // STORAGE
+        // ============================================================
+
+        function saveUsers() {
+            localStorage.setItem('users', JSON.stringify(allUsers));
+        }
+
+        function loadUsers() {
+            try {
+                const s = localStorage.getItem('users');
+                allUsers = s ? JSON.parse(s) : [];
+            } catch (e) {
+                allUsers = [];
+            }
+        }
+
+        function initializeSampleUsers() {
+            if (allUsers.length === 0) {
+                allUsers = [
+                    new User('Admin Master', 'admin@controle.com', 'admin123', 'Admin', '', 'Ativo', 'Usuário administrador com acesso total'),
+                    new User('Maria Santos', 'maria@inova.com', 'senha123', 'Operador', 'INOVA', 'Ativo', ''),
+                    new User('Pedro Costa', 'pedro@mvvs.com', 'senha123', 'Visualizador', 'MVVS', 'Ativo', ''),
+                ];
+                saveUsers();
+            }
+        }
+
+        // ============================================================
+        // POPULAÇÃO DE FILTROS
+        // ============================================================
+
+        function populateEpoFilters() {
+            const panel = document.getElementById('filtersPanel');
+            const epos = new Set();
+            
+            // Gather EPOs from users
+            allUsers.forEach(u => {
+                if (u.epo) epos.add(u.epo);
+            });
+
+            // Add EPOs from select
+            const epoSelect = document.querySelector('select[name="userEpo"]');
+            if (epoSelect) {
+                Array.from(epoSelect.options).forEach(o => {
+                    if (o.value) epos.add(o.value);
+                });
+            }
+
+            panel.innerHTML = '';
+            const actions = document.createElement('div');
+            actions.className = 'filter-actions';
+
+            const makeGroup = (title, listItems, name) => {
+                const g = document.createElement('div');
+                g.className = 'filter-group';
+                const h = document.createElement('h4'); 
+                h.textContent = title; 
+                g.appendChild(h);
+                Array.from(listItems).sort((a, b) => String(a).localeCompare(b, 'pt-BR')).forEach(v => {
+                    const row = document.createElement('label'); 
+                    row.className = 'filter-checkbox';
+                    const inp = document.createElement('input'); 
+                    inp.type = 'checkbox'; 
+                    inp.name = name; 
+                    inp.value = v;
+                    inp.addEventListener('change', applyFilters);
+                    const span = document.createElement('span'); 
+                    span.textContent = v;
+                    row.appendChild(inp); 
+                    row.appendChild(span);
+                    g.appendChild(row);
+                });
+                return g;
+            };
+
+            if (epos.size) panel.appendChild(makeGroup('Filtrar por EPO', epos, 'epoFilter'));
+
+            const save = document.createElement('button'); 
+            save.className = 'save-btn'; 
+            save.textContent = 'Salvar';
+            save.addEventListener('click', () => {
+                applyFilters();
+                panel.classList.remove('open');
+                panel.setAttribute('aria-hidden', 'true');
+                const toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
+                if (toggleFiltersBtn) toggleFiltersBtn.setAttribute('aria-expanded', 'false');
+            });
+
+            const clear = document.createElement('button'); 
+            clear.className = 'clear-btn'; 
+            clear.textContent = 'Limpar';
+            clear.addEventListener('click', () => {
+                panel.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
+                applyFilters();
+            });
+
+            actions.appendChild(save); 
+            actions.appendChild(clear); 
+            panel.appendChild(actions);
+
+            const closeBtn = document.createElement('button'); 
+            closeBtn.className = 'panel-close'; 
+            closeBtn.textContent = '×';
+            closeBtn.addEventListener('click', () => {
+                panel.classList.remove('open'); 
+                panel.setAttribute('aria-hidden', 'true');
+                const toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
+                if (toggleFiltersBtn) toggleFiltersBtn.setAttribute('aria-expanded', 'false');
+            });
+            panel.appendChild(closeBtn);
+        }
+
+        // ============================================================
+        // FILTROS E BUSCA
+        // ============================================================
+
+        function applyFilters() {
+            const panel = document.getElementById('filtersPanel');
+            const selectedEpos = Array.from(panel.querySelectorAll('input[name="epoFilter"]:checked')).map(i => i.value);
+            const search = (document.getElementById('searchInput')?.value || '').toLowerCase();
+
+            let filtered = allUsers;
+
+            if (selectedEpos.length > 0) {
+                filtered = filtered.filter(u => selectedEpos.includes(u.epo));
+            }
+
+            if (search) {
+                filtered = filtered.filter(u => 
+                    u.name.toLowerCase().includes(search) || 
+                    u.email.toLowerCase().includes(search) ||
+                    u.epo.toLowerCase().includes(search)
+                );
+            }
+
+            renderUsers(filtered);
+        }
+
+        // ============================================================
+        // RENDERIZAÇÃO
+        // ============================================================
+
+        function renderUsers(users) {
+            const container = document.getElementById('usersContainer');
+            
+            if (users.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">Nenhum usuário encontrado</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            users.forEach((user, idx) => {
+                const userIndex = allUsers.indexOf(user);
+                const recordItem = document.createElement('div');
+                recordItem.className = 'record-item';
+                
+                const statusColor = user.status === 'Ativo' ? '#2ecc71' : '#e74c3c';
+                const statusBg = user.status === 'Ativo' ? '#efe' : '#fee';
+
+                recordItem.innerHTML = `
+                    <div class="record-info">
+                        <div class="record-endereco">${user.name}</div>
+                        <div class="record-codigo">Email: ${user.email} | EPO: <strong>${user.epo}</strong> | Função: ${user.role}</div>
+                    </div>
+                    <div class="record-actions">
+                        <select class="record-status" onchange="updateUserStatus(${userIndex}, this.value)">
+                            <option value="Ativo" ${user.status === 'Ativo' ? 'selected' : ''}>Ativo</option>
+                            <option value="Inativo" ${user.status === 'Inativo' ? 'selected' : ''}>Inativo</option>
+                        </select>
+                        <button class="record-view-btn" onclick="openUserViewModal(${userIndex})">👁</button>
+                        <button class="record-arrow" onclick="openUserEditModal(${userIndex})">→</button>
+                    </div>
+                `;
+                container.appendChild(recordItem);
+            });
+        }
+
+        // ============================================================
+        // MODAIS
+        // ============================================================
+
+        function openAddModal() {
+            currentEditingIndex = -1;
+            document.getElementById('formTitle').textContent = 'Novo Usuário';
+            document.getElementById('userForm').reset();
+            document.getElementById('userPassword').required = true;
+            document.getElementById('userFormModal').classList.add('open');
+        }
+
+        // Atualizar status do usuário
+        window.updateUserStatus = function(index, status) {
+            allUsers[index].status = status;
+            saveUsers();
+        };
+
+        function openUserEditModal(index) {
+            const user = allUsers[index];
+            const editModal = document.createElement('div');
+            editModal.className = 'edit-modal open';
+            
+            editModal.innerHTML = `
+                <div class="edit-container">
+                    <button class="close-edit" onclick="this.closest('.edit-modal').remove()">×</button>
+                    <h2>Editar Usuário</h2>
+                    <form class="edit-form">
+                        <div class="form-group">
+                            <label>Nome Completo</label>
+                            <input type="text" value="${user.name}" name="name">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" value="${user.email}" name="email">
+                        </div>
+                        <div class="form-group">
+                            <label>Senha</label>
+                            <input type="password" value="${user.password}" name="password">
+                        </div>
+                        <div class="form-group">
+                            <label>Função</label>
+                            <select name="role">
+                                <option value="Admin" ${user.role === 'Admin' ? 'selected' : ''}>Administrador</option>
+                                <option value="Operador" ${user.role === 'Operador' ? 'selected' : ''}>Operador</option>
+                                <option value="Visualizador" ${user.role === 'Visualizador' ? 'selected' : ''}>Visualizador</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>EPO (opcional para Admin)</label>
+                            <select name="epo">
+                                <option value="">Sem EPO atribuída</option>
+                                <option value="INOVA" ${user.epo === 'INOVA' ? 'selected' : ''}>INOVA</option>
+                                <option value="MVVS" ${user.epo === 'MVVS' ? 'selected' : ''}>MVVS</option>
+                                <option value="TELMINAS" ${user.epo === 'TELMINAS' ? 'selected' : ''}>TELMINAS</option>
+                                <option value="BELMATEC" ${user.epo === 'BELMATEC' ? 'selected' : ''}>BELMATEC</option>
+                                <option value="CARSO" ${user.epo === 'CARSO' ? 'selected' : ''}>CARSO</option>
+                                <option value="GLOBAL" ${user.epo === 'GLOBAL' ? 'selected' : ''}>GLOBAL</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select name="status">
+                                <option value="Ativo" ${user.status === 'Ativo' ? 'selected' : ''}>Ativo</option>
+                                <option value="Inativo" ${user.status === 'Inativo' ? 'selected' : ''}>Inativo</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Notas</label>
+                            <textarea name="notes" rows="3">${user.notes || ''}</textarea>
+                        </div>
+
+                        <div class="edit-form-buttons">
+                            <button type="button" class="edit-save-btn" onclick="saveEditedUser(${index}, this.closest('.edit-modal'))">Salvar</button>
+                            <button type="button" class="edit-delete-btn" onclick="deleteUser(${index}, this.closest('.edit-modal'))">Deletar</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+            document.body.appendChild(editModal);
+            editModal.addEventListener('click', (e) => {
+                if (e.target === editModal) editModal.remove();
+            });
+        }
+
+        // Salvar usuário editado
+        window.saveEditedUser = function(index, modal) {
+            const form = modal.querySelector('.edit-form');
+            const formData = new FormData(form);
+            
+            allUsers[index].name = formData.get('name');
+            allUsers[index].email = formData.get('email');
+            allUsers[index].password = formData.get('password');
+            allUsers[index].role = formData.get('role');
+            allUsers[index].epo = formData.get('epo');
+            allUsers[index].status = formData.get('status');
+            allUsers[index].notes = formData.get('notes');
+            
+            saveUsers();
+            populateEpoFilters();
+            applyFilters();
+            modal.remove();
+        };
+
+        // Deletar usuário
+        window.deleteUser = function(index, modal) {
+            if (confirm('Tem certeza que deseja deletar este usuário?')) {
+                allUsers.splice(index, 1);
+                saveUsers();
+                populateEpoFilters();
+                applyFilters();
+                modal.remove();
+            }
+        };
+
+        function openUserViewModal(index) {
+            const user = allUsers[index];
+            const viewModal = document.createElement('div');
+            viewModal.className = 'edit-modal open view-modal';
+            
+            const statusColor = user.status === 'Ativo' ? '#2ecc71' : '#e74c3c';
+            const statusBg = user.status === 'Ativo' ? '#efe' : '#fee';
+            const createdDate = new Date(user.createdAt).toLocaleDateString('pt-BR');
+            const lastLogin = user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('pt-BR') : 'Nunca';
+
+            viewModal.innerHTML = `
+                <div class="view-container">
+                    <button class="close-edit" onclick="this.closest('.edit-modal').remove()">×</button>
+                    <h2>Visualizar Usuário</h2>
+                    <div class="view-content">
+                        <div class="view-row"><strong>Nome:</strong><div>${user.name || ''}</div></div>
+                        <div class="view-row"><strong>Email:</strong><div>${user.email || ''}</div></div>
+                        <div class="view-row"><strong>Função:</strong><div>${user.role || ''}</div></div>
+                        <div class="view-row"><strong>EPO:</strong><div><strong>${user.epo || ''}</strong></div></div>
+                        <div class="view-row"><strong>Status:</strong><div><span style="background: ${statusBg}; color: ${statusColor}; padding: 4px 8px; border-radius: 4px; font-weight: 600;">${user.status}</span></div></div>
+                        <div class="view-row"><strong>Data de Criação:</strong><div>${createdDate}</div></div>
+                        <div class="view-row"><strong>Último Acesso:</strong><div>${lastLogin}</div></div>
+                        ${user.notes ? `<div class="view-row" style="grid-column: 1 / -1"><strong>Notas:</strong><div>${user.notes}</div></div>` : ''}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(viewModal);
+            viewModal.addEventListener('click', (e) => {
+                if (e.target === viewModal) viewModal.remove();
+            });
+        }
+
+        // ============================================================
+        // FORM HANDLER
+        // ============================================================
+
+        document.getElementById('userForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('userName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const password = document.getElementById('userPassword').value;
+            const role = document.getElementById('userRole').value;
+            const epo = document.getElementById('userEpo').value;
+            const status = document.getElementById('userStatus').value;
+            const notes = document.getElementById('userNotes').value.trim();
+
+            if (!name || !email || !password || !role || !epo || !status) {
+                alert('Preencha todos os campos obrigatórios');
+                return;
+            }
+
+            if (currentEditingIndex >= 0) {
+                // Editar
+                allUsers[currentEditingIndex] = new User(name, email, password, role, epo, status, notes);
+            } else {
+                // Adicionar
+                allUsers.push(new User(name, email, password, role, epo, status, notes));
+            }
+
+            saveUsers();
+            populateEpoFilters();
+            applyFilters();
+            document.getElementById('userFormModal').classList.remove('open');
+        });
+
+        document.getElementById('addUserBtn').addEventListener('click', openAddModal);
+
+        // Close modals
+        document.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const modalId = e.target.getAttribute('data-modal');
+                document.getElementById(modalId).classList.remove('open');
+            });
+        });
+
+        document.querySelectorAll('.btn-cancel').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const modalId = e.target.getAttribute('data-modal');
+                document.getElementById(modalId).classList.remove('open');
+            });
+        });
+
+        // Toggle filters
+        const toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
+        if (toggleFiltersBtn) {
+            toggleFiltersBtn.addEventListener('click', () => {
+                const panel = document.getElementById('filtersPanel');
+                const isOpen = !panel.classList.contains('open');
+                panel.classList.toggle('open', isOpen);
+                panel.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+                toggleFiltersBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                if (isOpen) populateEpoFilters();
+            });
+        }
+
+        // Search
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+
+        // Initialize
+        loadUsers();
+        initializeSampleUsers();
+        populateEpoFilters();
+        renderUsers(allUsers);
+    </script>
+</body>
+</html>

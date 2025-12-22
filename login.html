@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Controle EPO</title>
+    <link rel="stylesheet" href="./main.css">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-header">
+            <h1>Controle EPO</h1>
+            <p>Sistema de Gerenciamento</p>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+
+        <form id="loginForm" class="login-form">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="seu.email@example.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-login" id="submitBtn">Entrar</button>
+        </form>
+
+        <div class="divider">OU</div>
+
+        <div class="oauth-buttons">
+            <button type="button" class="btn-oauth btn-microsoft" id="microsoftLoginBtn">
+                <svg class="oauth-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="2" width="9" height="9" fill="#0078d4"/>
+                    <rect x="13" y="2" width="9" height="9" fill="#7fba00"/>
+                    <rect x="2" y="13" width="9" height="9" fill="#ffc300"/>
+                    <rect x="13" y="13" width="9" height="9" fill="#f25022"/>
+                </svg>
+                Entrar com Microsoft
+            </button>
+        </div>
+
+        <div class="loading" id="loading">
+            <span class="spinner"></span>Autenticando...
+        </div>
+
+        <div class="footer-text">
+            <p>Desenvolvido para gerenciamento de EPO</p>
+        </div>
+    </div>
+
+    <!-- MSAL.js library -->
+    <script src="https://alcdn.msauth.net/browser/2.26.0/js/msal-browser.min.js"></script>
+    <script src="./msalConfig.js"></script>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const loading = document.getElementById('loading');
+        const microsoftLoginBtn = document.getElementById('microsoftLoginBtn');
+
+        // Initialize MSAL
+        let pca;
+        let accounts;
+
+        async function initializeMSAL() {
+            try {
+                pca = new msal.PublicClientApplication(msalConfig);
+                await pca.initialize();
+                accounts = pca.getAllAccounts();
+                
+                // Se já tem conta ativa, redireciona
+                if (accounts.length > 0) {
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        email: accounts[0].username,
+                        name: accounts[0].name,
+                        loginMethod: 'microsoft',
+                        timestamp: new Date().toISOString()
+                    }));
+                    window.location.href = 'front.html';
+                }
+            } catch (error) {
+                console.error('MSAL initialization failed:', error);
+            }
+        }
+
+        // Check if user is already logged in (simple auth)
+        function checkLoginStatus() {
+            const user = localStorage.getItem('currentUser');
+            if (user && !pca) {
+                // If simple auth is stored and MSAL failed, just redirect
+                window.location.href = 'front.html';
+            }
+        }
+
+        // Handle form submission (Simple email/password login)
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            loading.style.display = 'block';
+            submitBtn.disabled = true;
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            try {
+                if (!email || !password) {
+                    throw new Error('Email e senha são obrigatórios');
+                }
+
+                if (!email.includes('@')) {
+                    throw new Error('Email inválido');
+                }
+
+                // Simulate a small delay for user feedback
+                await new Promise(r => setTimeout(r, 1000));
+
+                // Store user in localStorage
+                localStorage.setItem('currentUser', JSON.stringify({
+                    email: email,
+                    loginMethod: 'email',
+                    timestamp: new Date().toISOString()
+                }));
+
+                successMessage.textContent = 'Login realizado com sucesso! Redirecionando...';
+                successMessage.style.display = 'block';
+
+                setTimeout(() => {
+                    window.location.href = 'front.html';
+                }, 1500);
+            } catch (error) {
+                errorMessage.textContent = error.message || 'Erro ao fazer login. Tente novamente.';
+                errorMessage.style.display = 'block';
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Handle Microsoft Login with MSAL
+        microsoftLoginBtn.addEventListener('click', async () => {
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            loading.style.display = 'block';
+            microsoftLoginBtn.disabled = true;
+
+            try {
+                if (!pca) {
+                    throw new Error('MSAL não foi inicializado. Verifique msalConfig.js');
+                }
+
+                // Check if Client ID is configured
+                if (msalConfig.auth.clientId === 'SEU_CLIENT_ID_AQUI') {
+                    throw new Error('Client ID não configurado. Acesse msalConfig.js e configure suas credenciais do Azure.');
+                }
+
+                // Perform login
+                const response = await pca.loginPopup(loginRequest);
+                
+                if (response.account) {
+                    pca.setActiveAccount(response.account);
+                    
+                    // Store user in localStorage
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        email: response.account.username,
+                        name: response.account.name,
+                        loginMethod: 'microsoft',
+                        timestamp: new Date().toISOString()
+                    }));
+
+                    successMessage.textContent = 'Login com Microsoft realizado com sucesso! Redirecionando...';
+                    successMessage.style.display = 'block';
+
+                    setTimeout(() => {
+                        window.location.href = 'front.html';
+                    }, 1500);
+                }
+            } catch (error) {
+                console.error('Microsoft login error:', error);
+                
+                let errorText = 'Erro ao fazer login com Microsoft. Tente novamente.';
+                
+                if (error.errorCode === 'popup_window_error') {
+                    errorText = 'Falha ao abrir popup de login. Verifique as configurações de popup do navegador.';
+                } else if (error.errorCode === 'invalid_scope') {
+                    errorText = 'Escopo inválido configurado. Verifique msalConfig.js';
+                } else if (error.errorCode === 'user_cancelled') {
+                    errorText = 'Login cancelado pelo usuário.';
+                } else if (error.message && error.message.includes('Client ID')) {
+                    errorText = error.message;
+                }
+                
+                errorMessage.textContent = errorText;
+                errorMessage.style.display = 'block';
+                loading.style.display = 'none';
+                microsoftLoginBtn.disabled = false;
+            }
+        });
+
+        // Initialize MSAL and check login status on page load
+        initializeMSAL();
+        checkLoginStatus();
+    </script>
+</body>
+</html>
