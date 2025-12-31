@@ -8,7 +8,18 @@
 </head>
 <body>
     <div class="header">
-        <p>Gerenciar Logins</p>
+        <img src="logo.png" alt="Logo" class="header-logo">
+        <p>Portal MDU</p>
+        <button id="menuBtn" class="menu-btn">☰ Menu</button>
+    </div>
+
+    <div class="sidebar-menu" id="sidebarMenu">
+        <button class="close-menu" id="closeMenu">×</button>
+        <nav>
+            <a href="front.html">Home</a>
+            <a href="controle_e.html">Controle EPO</a>
+            <a href="ger_login.html">Gerenciar Logins</a>
+        </nav>
     </div>
 
     <div class="principal">
@@ -524,5 +535,9 @@
         populateEpoFilters();
         renderUsers(allUsers);
     </script>
+
+    <div class="footer">
+        © 2025 Portal MDU - Todos os direitos reservados
+    </div>
 </body>
 </html>

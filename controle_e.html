@@ -11,9 +11,18 @@
 <body>
     <div class="header">
         <img src="logo.png" alt="Logo" class="header-logo">
-        <p>Consulta MDU</p>
+        <p>Portal MDU</p>
+        <button id="menuBtn" class="menu-btn">☰ Menu</button>
     </div>
     <div class="principal">
+        <div class="sidebar-menu" id="sidebarMenu">
+            <button class="close-menu" id="closeMenu">×</button>
+            <nav>
+                <a href="front.html">Home</a>
+                <a href="controle_e.html">Controle EPO</a>
+                <a href="ger_login.html">Gerenciar Logins</a>
+            </nav>
+        </div>
     <div class="top-bar">
         
         <button id="toggleFiltersBtn" class="filter-toggle" aria-expanded="false">Filtros ▾</button>
@@ -22,6 +31,7 @@
             <button id="clearFiltersBtn" title="Limpar filtros">✖</button>
         </div>
         <div id="filtersPanel" class="filters-panel" aria-hidden="true"></div>
+        <button id="exportBtn" class="filter-toggle" aria-expanded="false">Exportar ▾</button>
         <button class="add-btn" id="addBtn">+ Adicionar endereço</button>
     </div>
 
@@ -99,7 +109,7 @@
     </div>
     </div>
     <div class="footer">
-        TESTANDO
-    </div>           
+        © 2025 Portal MDU - Todos os direitos reservados
+    </div>
 </body>
 </html>

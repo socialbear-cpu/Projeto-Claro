@@ -1,0 +1,46 @@
+PRAGMA foreign_keys = ON;
+
+-- =========================
+-- TABELA FUNÇÕES
+-- =========================
+CREATE TABLE funcoes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Nome_Funcao TEXT NOT NULL UNIQUE,
+    Descricao TEXT
+);
+
+-- =========================
+-- TABELA USUÁRIOS
+-- =========================
+CREATE TABLE usuarios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Nome_Completo TEXT NOT NULL,
+    Email TEXT NOT NULL UNIQUE,
+    Senha TEXT NOT NULL,
+    funcao_id INTEGER NOT NULL,
+    EPO TEXT,
+    Status TEXT DEFAULT 'Ativo',
+
+    FOREIGN KEY (funcao_id) REFERENCES funcoes(id)
+);
+
+-- =========================
+-- TABELA DEMANDAS
+-- =========================
+CREATE TABLE demandas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario_id INTEGER,
+    EPO TEXT NOT NULL,
+    Origem TEXT NOT NULL,
+    Endereco TEXT NOT NULL,
+    Bairro TEXT NOT NULL,
+    Complemento TEXT,
+    Cidade TEXT NOT NULL,
+    Codigo_Imovel TEXT NOT NULL,
+    CEP TEXT NOT NULL,
+    Celular TEXT,
+    Node TEXT,
+    Observacao TEXT,
+
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+);

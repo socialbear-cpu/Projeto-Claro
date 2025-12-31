@@ -9,6 +9,17 @@ document.addEventListener('DOMContentLoaded', function () {
 	// Armazenar registros em localStorage
 	let records = JSON.parse(localStorage.getItem('records')) || [];
 
+	// Lista de arquivos predefinidos
+	const predefinedFiles = [
+		'Padrão de Vistoria',
+		'Book Fotografico',
+		'Termo de Construção',
+		'Termo de Vistoria',
+		'Ordem de Serviço',
+		'Mapa de Piso',
+		'Projeto Eletronico'
+	];
+
 	// Função para salvar registros
 	function saveRecords() {
 		localStorage.setItem('records', JSON.stringify(records));
@@ -71,6 +82,40 @@ document.addEventListener('DOMContentLoaded', function () {
 			`;
 		}).join('');
 
+		// Determinar arquivos predefinidos anexados
+		const attachedPredefined = new Set();
+		if (record.attachments) {
+			record.attachments.forEach(att => {
+				predefinedFiles.forEach(pre => {
+					if (att.customName && att.customName.startsWith(pre)) {
+						attachedPredefined.add(pre);
+					}
+				});
+			});
+		}
+
+		const predefinedFilesHtml = predefinedFiles.map(fileName => {
+			const bgColor = attachedPredefined.has(fileName) ? '#d4edda' : '#fff3cd'; // verde claro se anexado, amarelo se não
+			return `
+				<div class="predefined-file-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; background: ${bgColor};">
+					<span>${fileName}</span>
+					<button type="button" onclick="attachPredefinedFile(${index}, '${fileName}')" style="background:#fff; color:#000; border:1px solid #ddd; padding:6px 10px; border-radius:4px; cursor:pointer; font-size:12px;">Anexar</button>
+				</div>
+			`;
+		}).join('');
+
+		const commentsHtml = (record.comments || []).map((comment, cIndex) => {
+			return `
+				<div class="comment-item" style="border: 1px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 8px; background: #f8f9fa;">
+					<div style="display: flex; justify-content: space-between; align-items: center;">
+					<small style="color: #666;">${comment.date || new Date().toLocaleString('pt-BR')}</small>
+						<button type="button" onclick="deleteComment(${index}, ${cIndex})" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remover</button>
+					</div>
+					<div style="margin-top: 5px;">${comment.text.replace(/\n/g, '<br>')}</div>
+				</div>
+			`;
+		}).join('');
+
 		viewModal.innerHTML = `
 			<div class="view-container">
 				<button class="close-edit" onclick="this.closest('.edit-modal').remove()">×</button>
@@ -88,8 +133,24 @@ document.addEventListener('DOMContentLoaded', function () {
 					<div class="view-row"><strong>Origem:</strong><div>${record.origem || ''}</div></div>
 					<div class="view-row" style="grid-column: 1 / -1"><strong>Observação:</strong><div>${(record.observacao || '').replace(/\n/g, '<br>')}</div></div>
 					<div class="attachments-section" style="grid-column: 1 / -1">
-						<h3>Anexos</h3>
-						<div class="attachments-list">${attachmentsHtml || '<div style="color:#777">Nenhum anexo</div>'}</div>
+						<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+							<h3 onclick="toggleAttachmentsVisibility(${index})" style="cursor: pointer; user-select: none;">Anexos ▼</h3>
+						</div>
+						<div class="predefined-files-list" style="margin-bottom: 15px;">
+							<h4 onclick="togglePredefinedFilesVisibility(${index})" style="cursor: pointer; user-select: none;">Arquivos Predefinidos ▼</h4>
+							<div id="predefinedFilesList${index}">${predefinedFilesHtml}</div>
+						</div>
+						<div class="attachments-list" id="attachmentsList${index}">${attachmentsHtml || '<div style="color:#777">Nenhum anexo</div>'}</div>
+					</div>
+					<div class="comments-section" style="grid-column: 1 / -1; margin-top: 20px;">
+						<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+							<h3 onclick="toggleCommentsVisibility(${index})" style="cursor: pointer; user-select: none;">Histórico de Comentários ▼</h3>
+						</div>
+						<div style="display: flex; gap: 10px; margin-bottom: 15px;">
+							<input type="text" id="commentInputView${index}" placeholder="Digite o comentário" style="flex: 2; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+							<button type="button" onclick="addCommentInlineView(${index})" style="flex: 1; padding: 2px 4px; font-size: 12px;">+ Comentário</button>
+						</div>
+						<div class="comments-list" id="commentsList${index}">${commentsHtml || '<div style="color:#777">Nenhum comentário</div>'}</div>
 					</div>
 				</div>
 			</div>
@@ -163,9 +224,9 @@ document.addEventListener('DOMContentLoaded', function () {
 					<div class="attachments-section">
 						<h3>Anexos</h3>
 						<div style="display: flex; gap: 10px; margin-bottom: 15px;">
-							<input type="text" id="fileName${index}" placeholder="Nome do arquivo" style="flex: 1; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px;">
+							<input type="text" id="fileName${index}" placeholder="Nome do arquivo" style="flex: 2; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px;">
 							<input type="file" id="fileInput${index}" onchange="handleFileUpload(event, ${index})" style="display: none;">
-							<button type="button" class="file-upload-btn" onclick="document.getElementById('fileInput${index}').click()" style="flex: 0 0 auto;">+ Adicionar</button>
+							<button type="button" class="file-upload-btn" onclick="document.getElementById('fileInput${index}').click()" style="flex: 1; padding: 4px 8px; font-size: 12px;">+ Adicionar</button>
 						</div>
 						<div class="attachments-list" id="attachments${index}">
 							${record.attachments ? record.attachments.map((file, fIndex) => `
@@ -235,11 +296,199 @@ document.addEventListener('DOMContentLoaded', function () {
 		const files = Array.from(event.target.files);
 		const customNameInput = document.getElementById(`fileName${index}`);
 		const customName = customNameInput ? customNameInput.value : '';
-		
+
 		if (!records[index].attachments) {
 			records[index].attachments = [];
 		}
-		
+
+		let processed = 0;
+		files.forEach((file, fileIndex) => {
+			const reader = new FileReader();
+			reader.onload = () => {
+				const finalCustomName = customName && files.length === 1 ? customName : '';
+				records[index].attachments.push({
+					name: file.name,
+					customName: finalCustomName,
+					data: reader.result
+				});
+				processed++;
+				if (processed === files.length) {
+					saveRecords();
+					// Limpar input de nome
+					if (customNameInput) customNameInput.value = '';
+					// Atualizar lista de anexos no modal sem reabri-lo
+					const attachmentsList = document.getElementById(`attachments${index}`);
+					if (attachmentsList) {
+						const record = records[index];
+						attachmentsList.innerHTML = record.attachments ? record.attachments.map((file, fIndex) => `
+							<div class="attachment-item">
+								<div>
+									<strong>${file.customName || file.name}</strong><br>
+									<small style="color: #999;">${file.name}</small>
+								</div>
+								<div style="display: flex; gap: 8px;">
+									<button type="button" onclick="downloadAttachment(${index}, ${fIndex})" style="background: #3498db; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Download</button>
+									<button type="button" onclick="removeAttachment(${index}, ${fIndex})" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remover</button>
+								</div>
+							</div>
+						`).join('') : '';
+					}
+				}
+			};
+			reader.readAsDataURL(file);
+		});
+	};
+
+	// Função para remover anexo
+	window.removeAttachment = function(index, fileIndex) {
+		records[index].attachments.splice(fileIndex, 1);
+		saveRecords();
+		// Atualizar lista de anexos no modal sem reabri-lo
+		const attachmentsList = document.getElementById(`attachments${index}`);
+		if (attachmentsList) {
+			const record = records[index];
+			attachmentsList.innerHTML = record.attachments ? record.attachments.map((file, fIndex) => `
+				<div class="attachment-item">
+					<div>
+						<strong>${file.customName || file.name}</strong><br>
+						<small style="color: #999;">${file.name}</small>
+					</div>
+					<div style="display: flex; gap: 8px;">
+						<button type="button" onclick="downloadAttachment(${index}, ${fIndex})" style="background: #3498db; color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Download</button>
+						<button type="button" onclick="removeAttachment(${index}, ${fIndex})" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remover</button>
+					</div>
+				</div>
+			`).join('') : '';
+		}
+	};
+
+	// Função para fazer download de anexo
+	window.downloadAttachment = function(index, fileIndex) {
+		const attachment = records[index].attachments[fileIndex];
+		const link = document.createElement('a');
+		link.href = attachment.data;
+		link.download = attachment.customName || attachment.name;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	};
+
+	// Função para anexar arquivo predefinido
+	window.attachPredefinedFile = function(index, fileName) {
+		// Criar um input de arquivo temporário
+		const fileInput = document.createElement('input');
+		fileInput.type = 'file';
+		fileInput.style.display = 'none';
+		fileInput.onchange = (event) => {
+			const files = Array.from(event.target.files);
+			if (files.length > 0) {
+				const file = files[0];
+				const reader = new FileReader();
+				reader.onload = () => {
+					if (!records[index].attachments) {
+						records[index].attachments = [];
+					}
+					// Determinar o customName com contador se necessário
+					let existing = records[index].attachments.filter(att => att.customName.startsWith(fileName));
+					let maxNum = 0;
+					existing.forEach(att => {
+						let match = att.customName.match(new RegExp(`^${fileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?: \\((\\d+)\\))?$`));
+						if (match) {
+							if (match[1]) {
+								maxNum = Math.max(maxNum, parseInt(match[1]));
+							} else {
+								maxNum = Math.max(maxNum, 1);
+							}
+						}
+					});
+					let customName = fileName;
+					if (maxNum > 0) {
+						customName = `${fileName} (${maxNum + 1})`;
+					}
+					records[index].attachments.push({
+						name: file.name,
+						customName: customName,
+						data: reader.result
+					});
+					saveRecords();
+					// Atualizar lista de anexos no modal de visualização sem reabri-lo
+					const attachmentsList = document.getElementById(`attachmentsList${index}`);
+					if (attachmentsList) {
+						const record = records[index];
+						const attachmentsHtml = (record.attachments || []).map((file, fIndex) => {
+							return `
+								<div class="attachment-item">
+									<div>
+										<strong>${file.customName || file.name}</strong><br>
+										<small style="color: #999;">${file.name}</small>
+									</div>
+									<div style="display:flex; gap:8px;">
+										<button type="button" onclick="downloadAttachment(${index}, ${fIndex})" style="background:#3498db; color:#fff; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-size:12px;">Download</button>
+									</div>
+								</div>
+							`;
+						}).join('');
+						attachmentsList.innerHTML = attachmentsHtml || '<div style="color:#777">Nenhum anexo</div>';
+					}
+				};
+				reader.readAsDataURL(file);
+			}
+			// Remover o input temporário
+			document.body.removeChild(fileInput);
+		};
+		document.body.appendChild(fileInput);
+		fileInput.click();
+	};
+
+	// Função para alternar visibilidade dos anexos no modal de visualização
+	window.toggleAttachmentsVisibility = function(index) {
+		const h3 = document.querySelector(`.view-modal h3[onclick*="toggleAttachmentsVisibility(${index})"]`);
+		const list = document.getElementById(`attachmentsList${index}`);
+		if (list.style.display === 'none') {
+			list.style.display = 'block';
+			h3.innerHTML = 'Anexos ▼';
+		} else {
+			list.style.display = 'none';
+			h3.innerHTML = 'Anexos ▶';
+		}
+	};
+
+	// Função para alternar visibilidade dos arquivos predefinidos no modal de visualização
+	window.togglePredefinedFilesVisibility = function(index) {
+		const h4 = document.querySelector(`.view-modal h4[onclick*="togglePredefinedFilesVisibility(${index})"]`);
+		const list = document.getElementById(`predefinedFilesList${index}`);
+		if (list.style.display === 'none') {
+			list.style.display = 'block';
+			h4.innerHTML = 'Arquivos Predefinidos ▼';
+		} else {
+			list.style.display = 'none';
+			h4.innerHTML = 'Arquivos Predefinidos ▶';
+		}
+	};
+
+	// Função para alternar visibilidade dos comentários no modal de visualização
+	window.toggleCommentsVisibility = function(index) {
+		const h3 = document.querySelector(`.view-modal h3[onclick*="toggleCommentsVisibility(${index})"]`);
+		const list = document.getElementById(`commentsList${index}`);
+		if (list.style.display === 'none') {
+			list.style.display = 'block';
+			h3.innerHTML = 'Histórico de Comentários ▼';
+		} else {
+			list.style.display = 'none';
+			h3.innerHTML = 'Histórico de Comentários ▶';
+		}
+	};
+
+	// Função para adicionar anexos no modal de visualização
+	window.handleFileUploadView = function(event, index) {
+		const files = Array.from(event.target.files);
+		const customNameInput = document.getElementById(`fileNameView${index}`);
+		const customName = customNameInput ? customNameInput.value : '';
+
+		if (!records[index].attachments) {
+			records[index].attachments = [];
+		}
+
 		files.forEach((file, fileIndex) => {
 			const reader = new FileReader();
 			reader.onload = () => {
@@ -254,32 +503,208 @@ document.addEventListener('DOMContentLoaded', function () {
 				if (customNameInput) customNameInput.value = '';
 				// Reabrir modal para atualizar lista
 				const currentIndex = index;
-				document.querySelector('.edit-modal').remove();
-				openEditModal(currentIndex);
+				document.querySelector('.view-modal').remove();
+				openViewModal(currentIndex);
 			};
 			reader.readAsDataURL(file);
 		});
 	};
 
-	// Função para remover anexo
-	window.removeAttachment = function(index, fileIndex) {
-		records[index].attachments.splice(fileIndex, 1);
-		saveRecords();
-		const currentIndex = index;
-		document.querySelector('.edit-modal').remove();
-		openEditModal(currentIndex);
+	// Função para adicionar comentários no modal de visualização
+	window.addCommentInlineView = function(index) {
+		const commentInput = document.getElementById(`commentInputView${index}`);
+		const commentText = commentInput ? commentInput.value.trim() : '';
+
+		if (commentText) {
+			if (!records[index].comments) {
+				records[index].comments = [];
+			}
+			records[index].comments.push({
+				text: commentText,
+				date: new Date().toLocaleString('pt-BR')
+			});
+			saveRecords();
+			// Limpar input de comentário
+			if (commentInput) commentInput.value = '';
+			// Reabrir modal para atualizar lista
+			document.querySelector('.view-modal').remove();
+			openViewModal(index);
+		}
 	};
 
-	// Função para fazer download de anexo
-	window.downloadAttachment = function(index, fileIndex) {
-		const attachment = records[index].attachments[fileIndex];
-		const link = document.createElement('a');
-		link.href = attachment.data;
-		link.download = attachment.customName || attachment.name;
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
+	// Função para abrir modal de comentário estilizado
+	window.openCommentModal = function(index) {
+		const commentModal = document.createElement('div');
+		commentModal.className = 'comment-modal open';
+		commentModal.innerHTML = `
+			<div class="comment-modal-content">
+				<button class="close-comment-modal" onclick="this.closest('.comment-modal').remove()">×</button>
+				<h3>Adicionar Comentário</h3>
+				<textarea id="commentTextarea" placeholder="Digite seu comentário aqui..." rows="4" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; resize: vertical;"></textarea>
+				<div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+					<button class="cancel-comment-btn" onclick="this.closest('.comment-modal').remove()" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Cancelar</button>
+					<button class="save-comment-btn" onclick="saveComment(${index})" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Salvar</button>
+				</div>
+			</div>
+		`;
+		document.body.appendChild(commentModal);
+		commentModal.addEventListener('click', (e) => {
+			if (e.target === commentModal) commentModal.remove();
+		});
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') commentModal.remove();
+		});
 	};
+
+	// Função para salvar comentário
+	window.saveComment = function(index) {
+		const textarea = document.getElementById('commentTextarea');
+		const commentText = textarea ? textarea.value.trim() : '';
+		if (commentText) {
+			if (!records[index].comments) {
+				records[index].comments = [];
+			}
+			records[index].comments.push({
+				text: commentText,
+				date: new Date().toLocaleString('pt-BR')
+			});
+			saveRecords();
+			// Fechar modal de comentário
+			document.querySelector('.comment-modal').remove();
+			// Reabrir modal de visualização para atualizar lista
+			document.querySelector('.view-modal').remove();
+			openViewModal(index);
+		}
+	};
+
+	// Função para adicionar comentário (mantida para compatibilidade)
+	window.addComment = function(index) {
+		const commentText = prompt('Digite seu comentário:');
+		if (commentText && commentText.trim()) {
+			if (!records[index].comments) {
+				records[index].comments = [];
+			}
+			records[index].comments.push({
+				text: commentText.trim(),
+				date: new Date().toLocaleString('pt-BR')
+			});
+			saveRecords();
+			// Reabrir modal para atualizar lista
+			document.querySelector('.view-modal').remove();
+			openViewModal(index);
+		}
+	};
+
+	// Função para deletar comentário
+	window.deleteComment = function(index, commentIndex) {
+		if (confirm('Tem certeza que deseja deletar este comentário?')) {
+			records[index].comments.splice(commentIndex, 1);
+			saveRecords();
+			// Reabrir modal para atualizar lista
+			document.querySelector('.view-modal').remove();
+			openViewModal(index);
+		}
+	};
+
+	// Export functionality
+	const exportBtn = document.getElementById('exportBtn');
+
+	if (exportBtn) {
+		exportBtn.addEventListener('click', () => {
+			const filteredRecords = getFilteredRecords();
+
+			// Calculate max attachments, comments, and observacao lines for dynamic columns
+			let maxAttachments = 0;
+			let maxComments = 0;
+			let maxObservacaoLines = 0;
+			filteredRecords.forEach(record => {
+				if (record.attachments && record.attachments.length > maxAttachments) {
+					maxAttachments = record.attachments.length;
+				}
+				if (record.comments && record.comments.length > maxComments) {
+					maxComments = record.comments.length;
+				}
+				if (record.observacao) {
+					const lines = record.observacao.split('\n').length;
+					if (lines > maxObservacaoLines) {
+						maxObservacaoLines = lines;
+					}
+				}
+			});
+
+			// Headers for CSV
+			const headers = ['EPO', 'Endereco', 'Codigo', 'Bairro', 'Complemento', 'CEP', 'Cidade', 'Cliente', 'Celular', 'Node', 'Origem'];
+			for (let i = 1; i <= maxObservacaoLines; i++) {
+				headers.push(`Observacao${i}`);
+			}
+			headers.push('Status');
+			for (let i = 1; i <= maxAttachments; i++) {
+				headers.push(`Anexo${i}`);
+			}
+			for (let i = 1; i <= maxComments; i++) {
+				headers.push(`Comentario${i}`);
+			}
+
+			// Function to escape CSV fields
+			const escapeCSV = (field) => {
+				if (typeof field === 'string' && (field.includes(';') || field.includes('"') || field.includes('\n'))) {
+					return '"' + field.replace(/"/g, '""') + '"';
+				}
+				return field || '';
+			};
+
+			// Create CSV rows
+			const csvRows = [headers.join(';')];
+			filteredRecords.forEach(record => {
+				const row = [
+					escapeCSV(record.EPO),
+					escapeCSV(record.endereco),
+					escapeCSV(record.codigo),
+					escapeCSV(record.bairro),
+					escapeCSV(record.complemento),
+					escapeCSV(record.cep),
+					escapeCSV(record.cidade),
+					escapeCSV(record.cliente),
+					escapeCSV(record.celular),
+					escapeCSV(record.node),
+					escapeCSV(record.origem)
+				];
+
+				// Add observacao lines
+				const observacaoLines = record.observacao ? record.observacao.split('\n') : [];
+				for (let i = 0; i < maxObservacaoLines; i++) {
+					row.push(escapeCSV(observacaoLines[i] || ''));
+				}
+
+				row.push(escapeCSV(record.status));
+
+				// Add attachment names
+				for (let i = 0; i < maxAttachments; i++) {
+					const attachment = record.attachments && record.attachments[i];
+					row.push(escapeCSV(attachment ? (attachment.customName || attachment.name) : ''));
+				}
+
+				// Add comment texts
+				for (let i = 0; i < maxComments; i++) {
+					const comment = record.comments && record.comments[i];
+					row.push(escapeCSV(comment ? comment.text : ''));
+				}
+
+				csvRows.push(row.join(';'));
+			});
+
+			const csvContent = '\ufeff' + csvRows.join('\n');
+			const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+			const url = URL.createObjectURL(dataBlob);
+			const link = document.createElement('a');
+			link.href = url;
+			link.download = 'registros_filtrados.csv';
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+			URL.revokeObjectURL(url);
+		});
+	}
 
 	if (addBtn && formModal && closeFormBtn && dataForm) {
 		// Abrir modal
@@ -428,7 +853,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	    panel.appendChild(closeBtn);
 	}
 
-	function applyFiltersAndRender() {
+	function getFilteredRecords() {
 		const all = getAllRecords();
 		const search = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
 		const panel = document.getElementById('filtersPanel');
@@ -453,6 +878,11 @@ document.addEventListener('DOMContentLoaded', function () {
 			});
 		}
 
+		return list;
+	}
+
+	function applyFiltersAndRender() {
+		const list = getFilteredRecords();
 		renderRecords(list);
 	}
 
@@ -515,6 +945,13 @@ document.addEventListener('DOMContentLoaded', function () {
 	if (sidebarMenu) {
 		document.addEventListener('keydown', (e) => {
 			if (e.key === 'Escape') {
+				sidebarMenu.classList.remove('open');
+			}
+		});
+
+		// Close menu when clicking outside
+		document.addEventListener('click', (e) => {
+			if (sidebarMenu.classList.contains('open') && !sidebarMenu.contains(e.target) && e.target !== menuBtn) {
 				sidebarMenu.classList.remove('open');
 			}
 		});

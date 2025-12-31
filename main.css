@@ -1,4 +1,4 @@
-* {
+﻿﻿﻿﻿* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -56,11 +56,11 @@ body {
 }
 
 .top-bar {
-    width: 100%;
+    width: 95%;
     height: 65px;
     background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
     border-radius: 10px;
-    margin-bottom: 20px;
+    margin: 0 auto 20px auto;
     display: flex;
     align-items: center;
     gap: 15px;
@@ -186,9 +186,6 @@ body {
 }
 .top-filters input[type="search"] {
     /* centered search styling - visually prominent */
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
     width: 420px;
     max-width: 72%;
     height: 40px;
@@ -196,7 +193,7 @@ body {
     border: 2px solid #c41c1c; /* match header primary color */
     border-radius: 8px; /* slightly rounded, more square */
     box-shadow: 0 4px 12px rgba(235,28,28,0.08);
-    z-index: 1500;
+    margin: 0 auto;
 }
 .top-filters select {
     min-width: 120px;
@@ -223,15 +220,16 @@ body {
 
 .menu-btn {
     padding: 10px 20px;
-    background: linear-gradient(135deg, #eb1c1c 0%, #c41c1c 100%);
+    background: rgba(255, 255, 255, 0.2);
     color: white;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 6px;
     cursor: pointer;
     font-size: 16px;
     font-weight: 600;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 10px rgba(235, 28, 28, 0.3);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    margin-left: auto;
 }
 
 .menu-btn:hover {
@@ -458,30 +456,6 @@ p.header-text {
     color: white;
     font-weight: 600;
     font-size: 16px;
-}
-
-.add-btn {
-    margin-left: auto;
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3);
-}
-
-.add-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(46, 204, 113, 0.4);
-    background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
-}
-
-.add-btn:active {
-    transform: translateY(0);
 }
 
 /* Form Modal */
@@ -1000,7 +974,8 @@ p.header-text {
     margin-top: 20px;
 }
 
-.attachments-section h3 {
+.attachments-section h3,
+.comments-section h3 {
     color: #333;
     margin-bottom: 15px;
     font-size: 16px;
@@ -1087,7 +1062,7 @@ p.header-text {
     top: 12px;
 }
 
-/* Centralizar título do modal de visualização */
+/* Centralizar tÃ­tulo do modal de visualizaÃ§Ã£o */
 .view-container h2 {
     text-align: center;
     margin: 8px 0 18px;
@@ -1288,6 +1263,29 @@ body.login-page {
     margin-top: 20px;
     font-size: 12px;
     color: #999;
+}
+
+/* Back button in header */
+.back-btn {
+    margin-left: auto;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
 .error-message {
