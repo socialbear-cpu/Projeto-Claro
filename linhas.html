@@ -3,9 +3,10 @@
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>Gerenciador de Documentos</title>
+    <title>Gerenciador de Linhas</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
+    <script src='main.js'></script>
 </head>
 <body>
     <div class="header">
@@ -19,6 +20,7 @@
             <nav>
                 <a href="front.html">Home</a>
                 <a href="controle_e.html">Controle EPO</a>
+                <a href="linhas.html">Controle Linhas</a>
                 <a href="ger_login.html">Gerenciar Logins</a>
             </nav>
         </div>
@@ -31,7 +33,7 @@
         </div>
         <div id="filtersPanel" class="filters-panel" aria-hidden="true"></div>
         <button id="exportBtn" class="filter-toggle" aria-expanded="false">Exportar ▾</button>
-        <button class="add-btn" id="addBtn">+ Adicionar endereço</button>
+        <button class="add-btn" id="addBtn">+ Adicionar linha</button>
     </div>
 
     <!-- Lista de Registros -->
@@ -43,59 +45,45 @@
     <div class="form-modal" id="formModal">
         <div class="form-container">
             <button class="close-form" id="closeForm">×</button>
-            <h2>Adicionar Novo Registro</h2>
+            <h2>Adicionar Nova Linha</h2>
             <form id="dataForm">
                 <div class="form-row">
-                    <select name="EPO" required>
-                        <option value="">Selecione uma EPO</option>
-                        <option value="RMS">RMS</option>
-                        <option value="INOVA">INOVA</option>
-                        <option value="MVVS">MVVS</option>
-                        <option value="TELMINAS">TELMINAS</option>
-                        <option value="BELMATEC">BELMATEC</option>
-                        <option value="CARSO">CARSO</option>
-                        <option value="GLOBAL">GLOBAL</option>
+                    <select name="operadora" required>
+                        <option value="">Selecione uma operadora</option>
+                        <option value="Claro">Claro</option>
+                        <option value="Vivo">Vivo</option>
+                        <option value="Oi">Oi</option>
+                        <option value="Tim">Tim</option>
                     </select>
-                    <select name="origem" required>
-                        <option value="">Selecione uma origem</option>
-                        <option value="Demanda SGD">Demanda SGD</option>
-                        <option value="E-mail">E-mail</option>
-                        <option value="GPON Ongoing">GPON Ongoing</option>
-                        <option value="Projeto F">Projeto F</option>
+                    <select name="tipo" required>
+                        <option value="">Selecione um tipo</option>
+                        <option value="Fixa">Fixa</option>
+                        <option value="Móvel">Móvel</option>
+                        <option value="Banda Larga">Banda Larga</option>
                     </select>
                 </div>
                 <div class="form-row">
-                    <input type="text" placeholder="Endereço" name="endereco" required>
-                    <input type="text" placeholder="Bairro" name="bairro" required>
+                    <input type="text" placeholder="Número" name="numero" required>
+                    <input type="text" placeholder="Titular" name="titular" required>
                     
                 </div>
                 <div class="form-row">   
-                    <input type="text" placeholder="Complemento" name="complemento">
-                    <select name="cidade" required>
-                        <option value="">Selecione uma cidade</option>
-                        <option value="BELO HORIZONTE">BELO HORIZONTE</option>
-                        <option value="CONTAGEM">CONTAGEM</option>
-                        <option value="NOVA LIMA">NOVA LIMA</option>
-                        <option value="LAGOA SANTA">LAGOA SANTA</option>
-                        <option value="SABARA">SABARA</option>
-                        <option value="SETE LAGOAS">SETE LAGOAS</option>
-                        <option value="SANTA LUIZA">SANTA LUIZA</option>
-                        <option value="BETIM">BETIM</option>
+                    <input type="text" placeholder="Plano" name="plano">
+                    <select name="status" required>
+                        <option value="">Selecione um status</option>
+                        <option value="Ativa">Ativa</option>
+                        <option value="Suspensa">Suspensa</option>
+                        <option value="Cancelada">Cancelada</option>
                     </select>
                          
                 </div>
                 <div class="form-row">
-                    <input type="text" placeholder="Código de Imóvel" name="codigo" required>
-                    <input type="text" placeholder="CEP" name="cep" required>
+                    <input type="text" placeholder="Valor Mensal" name="valor" required>
+                    <input type="date" placeholder="Data Ativação" name="data_ativacao" required>
                 </div>
                 <div class="form-row">
-                    <input type="text" placeholder="Nome do Cliente" name="cliente" required>
-                    <input type="tel" placeholder="Celular" name="celular" required>
+                    <input type="text" placeholder="Observação" name="observacao">
                 </div>
-                <div class="form-row">
-                    <input type="text" placeholder="Node" name="node" required>
-
-                <textarea placeholder="Observação" name="observacao" rows="4"></textarea>
                 <button type="submit" class="submit-btn">Salvar</button>
             </form>
         </div>
@@ -110,6 +98,5 @@
     <div class="footer">
         © 2025 Portal MDU - Todos os direitos reservados
     </div>
-    <script src='main.js'></script>
 </body>
 </html>

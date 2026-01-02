@@ -1,28 +1,63 @@
-document.addEventListener('DOMContentLoaded', function () {
-	// Form Modal Handler
-	const addBtn = document.getElementById('addBtn');
-	const formModal = document.getElementById('formModal');
-	const closeFormBtn = document.getElementById('closeForm');
-	const dataForm = document.getElementById('dataForm');
-	const recordsContainer = document.getElementById('recordsContainer');
+// ====================
+// LOGIN CHECK
+// ====================
 
-	// Armazenar registros em localStorage
-	let records = JSON.parse(localStorage.getItem('records')) || [];
+// Check if user is logged in, redirect to login if not
+const currentUser = localStorage.getItem('currentUser');
+if (!currentUser) {
+    window.location.href = 'login.html';
+}
 
-	// Lista de arquivos predefinidos
-	const predefinedFiles = [
-		'Padrão de Vistoria',
-		'Book Fotografico',
-		'Termo de Construção',
-		'Termo de Vistoria',
-		'Ordem de Serviço',
-		'Mapa de Piso',
-		'Projeto Eletronico'
-	];
+// ====================
+// CONSTANTS AND VARIABLES
+// ====================
+
+const addBtn = document.getElementById('addBtn');
+const formModal = document.getElementById('formModal');
+const closeFormBtn = document.getElementById('closeForm');
+const dataForm = document.getElementById('dataForm');
+const recordsContainer = document.getElementById('recordsContainer');
+
+// ====================
+// ROLE-BASED ACCESS FUNCTIONS
+// ====================
+
+function getCurrentUserRole() {
+    try {
+        const currentUser = localStorage.getItem('currentUser');
+        if (!currentUser) return null;
+        const user = JSON.parse(currentUser);
+        return user.role;
+    } catch (e) {
+        return null;
+    }
+}
+
+function isAdmin() {
+    return getCurrentUserRole() === 'Admin';
+}
+
+// Detect page
+let isLinhasPage = window.location.pathname.includes('linhas.html');
+let recordsKey = isLinhasPage ? 'linhas_records' : 'records';
+
+// Store records in localStorage
+let records = JSON.parse(localStorage.getItem(recordsKey)) || [];
+
+// List of predefined files
+const predefinedFiles = [
+  'Padrão de Vistoria',
+  'Book Fotografico',
+  'Termo de Construção',
+  'Termo de Vistoria',
+  'Ordem de Serviço',
+  'Mapa de Piso',
+  'Projeto Eletronico'
+];
 
 	// Função para salvar registros
 	function saveRecords() {
-		localStorage.setItem('records', JSON.stringify(records));
+		localStorage.setItem(recordsKey, JSON.stringify(records));
 		if (typeof populateFilterOptions === 'function') populateFilterOptions();
 	}
 
@@ -40,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function () {
 					<div class="record-codigo">Código: ${record.codigo}</div>
 				</div>
 				<div class="record-actions">
-					<select class="record-status" onchange="updateRecordStatus(${index}, this.value)">
+					<select class="record-status" onchange="updateRecordStatus(${index}, this.value)" ${isAdmin() ? '' : 'disabled'}>
 						<option value="Pendente" ${record.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
 						<option value="Projeto" ${record.status === 'Projeto' ? 'selected' : ''}>Projeto</option>
 						<option value="Construção" ${record.status === 'Construção' ? 'selected' : ''}>Construção</option>
@@ -50,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function () {
 						<option value="Concluido" ${record.status === 'Concluido' ? 'selected' : ''}>Concluido</option>
 					</select>
 					<button class="record-view-btn" onclick="openViewModal(${index})">👁</button>
-					<button class="record-arrow" onclick="openEditModal(${index})">→</button>
+					${isAdmin() ? `<button class="record-arrow" onclick="openEditModal(${index})">→</button>` : ''}
 				</div>
 			`;
 			recordsContainer.appendChild(recordItem);
@@ -99,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			return `
 				<div class="predefined-file-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; background: ${bgColor};">
 					<span>${fileName}</span>
-					<button type="button" onclick="attachPredefinedFile(${index}, '${fileName}')" style="background:#fff; color:#000; border:1px solid #ddd; padding:6px 10px; border-radius:4px; cursor:pointer; font-size:12px;">Anexar</button>
+					${isAdmin() ? `<button type="button" onclick="attachPredefinedFile(${index}, '${fileName}')" style="background:#fff; color:#000; border:1px solid #ddd; padding:6px 10px; border-radius:4px; cursor:pointer; font-size:12px;">Anexar</button>` : ''}
 				</div>
 			`;
 		}).join('');
@@ -109,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				<div class="comment-item" style="border: 1px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 8px; background: #f8f9fa;">
 					<div style="display: flex; justify-content: space-between; align-items: center;">
 					<small style="color: #666;">${comment.date || new Date().toLocaleString('pt-BR')}</small>
-						<button type="button" onclick="deleteComment(${index}, ${cIndex})" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remover</button>
+						${isAdmin() ? `<button type="button" onclick="deleteComment(${index}, ${cIndex})" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remover</button>` : ''}
 					</div>
 					<div style="margin-top: 5px;">${comment.text.replace(/\n/g, '<br>')}</div>
 				</div>
@@ -146,10 +181,10 @@ document.addEventListener('DOMContentLoaded', function () {
 						<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
 							<h3 onclick="toggleCommentsVisibility(${index})" style="cursor: pointer; user-select: none;">Histórico de Comentários ▼</h3>
 						</div>
-						<div style="display: flex; gap: 10px; margin-bottom: 15px;">
+						${isAdmin() ? `<div style="display: flex; gap: 10px; margin-bottom: 15px;">
 							<input type="text" id="commentInputView${index}" placeholder="Digite o comentário" style="flex: 2; padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
 							<button type="button" onclick="addCommentInlineView(${index})" style="flex: 1; padding: 2px 4px; font-size: 12px;">+ Comentário</button>
-						</div>
+						</div>` : ''}
 						<div class="comments-list" id="commentsList${index}">${commentsHtml || '<div style="color:#777">Nenhum comentário</div>'}</div>
 					</div>
 				</div>
@@ -246,7 +281,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 					<div class="edit-form-buttons">
 						<button type="button" class="edit-save-btn" onclick="saveEditedRecord(${index})">Salvar</button>
-						<button type="button" class="edit-delete-btn" onclick="deleteRecord(${index})">Deletar</button>
+						${isAdmin() ? `<button type="button" class="edit-delete-btn" onclick="deleteRecord(${index})">Deletar</button>` : ''}
 					</div>
 				</form>
 			</div>
@@ -444,6 +479,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	window.toggleAttachmentsVisibility = function(index) {
 		const h3 = document.querySelector(`.view-modal h3[onclick*="toggleAttachmentsVisibility(${index})"]`);
 		const list = document.getElementById(`attachmentsList${index}`);
+		if (!h3 || !list) return;
 		if (list.style.display === 'none') {
 			list.style.display = 'block';
 			h3.innerHTML = 'Anexos ▼';
@@ -457,6 +493,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	window.togglePredefinedFilesVisibility = function(index) {
 		const h4 = document.querySelector(`.view-modal h4[onclick*="togglePredefinedFilesVisibility(${index})"]`);
 		const list = document.getElementById(`predefinedFilesList${index}`);
+		if (!h4 || !list) return;
 		if (list.style.display === 'none') {
 			list.style.display = 'block';
 			h4.innerHTML = 'Arquivos Predefinidos ▼';
@@ -470,6 +507,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	window.toggleCommentsVisibility = function(index) {
 		const h3 = document.querySelector(`.view-modal h3[onclick*="toggleCommentsVisibility(${index})"]`);
 		const list = document.getElementById(`commentsList${index}`);
+		if (!h3 || !list) return;
 		if (list.style.display === 'none') {
 			list.style.display = 'block';
 			h3.innerHTML = 'Histórico de Comentários ▼';
@@ -610,6 +648,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	const exportBtn = document.getElementById('exportBtn');
 
 	if (exportBtn) {
+		exportBtn.style.display = isAdmin() ? 'block' : 'none';
 		exportBtn.addEventListener('click', () => {
 			const filteredRecords = getFilteredRecords();
 
@@ -756,6 +795,8 @@ document.addEventListener('DOMContentLoaded', function () {
 			dataForm.reset();
 			renderRecords();
 		});
+
+		addBtn.style.display = isAdmin() ? 'block' : 'none';
 	}
 
 	// Renderizar registros ao carregar
@@ -782,7 +823,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	    const statuses = new Set();
 	    const epoSet = new Set();
 	    const citiesMap = new Map(); // key: lower -> display
-	    
+
 	    // default statuses
 	    const defaultStatuses = ['Pendente','Projeto','Construção','SAR','Pend. Rede','Reprovado','Concluido'];
 	    defaultStatuses.forEach(s => statuses.add(s));
@@ -793,18 +834,19 @@ document.addEventListener('DOMContentLoaded', function () {
 	        if (r.status) statuses.add(String(r.status).trim());
 	        if (r.EPO) epoSet.add(String(r.EPO).trim());
 	    });
-	    
+
 	    // gather from form selects only (not from record values)
 	    const addFormOrig = document.querySelector('select[name="origem"]');
 	    if (addFormOrig) Array.from(addFormOrig.options).forEach(o => { if (o.value) origins.add(String(o.value).trim()); });
-	    
+
 	    const addFormEpo = document.querySelector('select[name="EPO"]');
 	    if (addFormEpo) Array.from(addFormEpo.options).forEach(o => { if (o.value) epoSet.add(String(o.value).trim()); });
-	    
+
 	    const addFormCity = document.querySelector('select[name="cidade"]');
 	    if (addFormCity) Array.from(addFormCity.options).forEach(o => { const v = String(o.value || '').trim(); if (v) citiesMap.set(v.toLowerCase(), v); });
-	    
+
 	    const panel = document.getElementById('filtersPanel');
+	    if (!panel) return; // Skip if filtersPanel doesn't exist on this page
 	    const actions = document.createElement('div');
 	    actions.className = 'filter-actions';
 	    panel.innerHTML = '';
@@ -1003,14 +1045,878 @@ document.addEventListener('DOMContentLoaded', function () {
 		return panel;
 	}
 
+	function showPlanilhasPopup() {
+		let planilhas = JSON.parse(localStorage.getItem('planilhas')) || [
+			{ name: 'Planilha de Controle de EPO', href: '#' },
+			{ name: 'Relatório de Vistorias', href: '#' },
+			{ name: 'Lista de Materiais', href: '#' },
+			{ name: 'Orçamento de Projetos', href: '#' },
+			{ name: 'Cronograma de Execução', href: '#' }
+		];
+
+		const popup = document.createElement('div');
+		popup.className = 'detail-panel';
+		popup.setAttribute('aria-hidden', 'false');
+
+		const openCount = document.querySelectorAll('.detail-panel[aria-hidden="false"]').length;
+		const offset = (openCount % 6) * 30; // px
+		popup.style.left = `calc(50% + ${offset}px)`;
+		popup.style.top = `calc(50% + ${offset}px)`;
+
+		const renderPlanilhas = () => {
+			const planilhasHTML = planilhas.map((planilha, index) => {
+				const nameElement = planilha.href !== '#' ? `<a href="${planilha.href}" target="_blank" style="cursor:pointer;">${planilha.name}</a>` : `<span onclick="openViewPlanilhaModal(${index})" style="cursor:pointer;">${planilha.name}</span>`;
+				return `<div class="planilha-container" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; background: #f9f9f9; width: 100%;">${nameElement}<button onclick="openPlanilhaDetailsModal(${index})" style="background:#6c757d; color:#fff; border:none; padding:2px 6px; border-radius:4px; cursor:pointer; font-size:12px;">...</button></div>`;
+			}).join('');
+			return planilhasHTML;
+		};
+
+		popup.innerHTML = `
+			<button class="close-detail">×</button>
+			<div class="detail-content">
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+					<h2>Planilhas Disponíveis</h2>
+					<button id="addPlanilhaBtn" style="background:#28a745; color:#fff; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">Adicionar Planilha</button>
+				</div>
+				<ul style="list-style: none; padding: 0; display: flex; flex-direction: column; align-items: center;">${renderPlanilhas()}</ul>
+			</div>
+		`;
+
+		popup.querySelector('.close-detail').addEventListener('click', () => {
+			popup.remove();
+		});
+
+		const escHandler = (e) => {
+			if (e.key === 'Escape') popup.remove();
+		};
+		document.addEventListener('keydown', escHandler);
+
+		const observer = new MutationObserver(() => {
+			if (!document.body.contains(popup)) {
+				document.removeEventListener('keydown', escHandler);
+				observer.disconnect();
+			}
+		});
+		observer.observe(document.body, { childList: true, subtree: true });
+
+		document.body.appendChild(popup);
+
+		// Add event listener for add button
+		const addBtn = popup.querySelector('#addPlanilhaBtn');
+		if (addBtn) {
+			addBtn.addEventListener('click', () => {
+				openAddPlanilhaModal();
+			});
+		}
+
+		return popup;
+	}
+
+	function showSistemasPopup() {
+		let sistemas = JSON.parse(localStorage.getItem('sistemas')) || [
+			{ name: 'SGD', href: 'https://sgd.claro.com.br/auth/' },
+			{ name: 'CITRIX', href: 'https://netsmsapp.claro.com.br/' },
+			{ name: 'NET-HP', href: 'https://nethp.claro.com.br/' },
+			{ name: 'IDM', href: 'https://idmbr.claro.com.br/' }
+		];
+
+		const popup = document.createElement('div');
+		popup.className = 'detail-panel';
+		popup.setAttribute('aria-hidden', 'false');
+
+		const openCount = document.querySelectorAll('.detail-panel[aria-hidden="false"]').length;
+		const offset = (openCount % 6) * 30; // px
+		popup.style.left = `calc(50% + ${offset}px)`;
+		popup.style.top = `calc(50% + ${offset}px)`;
+
+		const renderSistemas = () => {
+			const sistemasHTML = sistemas.map((sistema, index) => {
+				const nameElement = sistema.href !== '#' ? `<a href="${sistema.href}" target="_blank" style="cursor:pointer;">${sistema.name}</a>` : `<span onclick="openViewSistemaModal(${index})" style="cursor:pointer;">${sistema.name}</span>`;
+				return `<div class="planilha-container" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; background: #f9f9f9; width: 100%;">${nameElement}<button onclick="openSistemaDetailsModal(${index})" style="background:#6c757d; color:#fff; border:none; padding:2px 6px; border-radius:4px; cursor:pointer; font-size:12px;">Editar</button></div>`;
+			}).join('');
+			return sistemasHTML;
+		};
+
+		popup.innerHTML = `
+			<button class="close-detail">×</button>
+			<div class="detail-content">
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+					<h2>Sistemas Disponíveis</h2>
+					<button id="addSistemaBtn" style="background:#28a745; color:#fff; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">Adicionar Sistema</button>
+				</div>
+				<ul style="list-style: none; padding: 0; display: flex; flex-direction: column; align-items: center;">${renderSistemas()}</ul>
+			</div>
+		`;
+
+		popup.querySelector('.close-detail').addEventListener('click', () => {
+			popup.remove();
+		});
+
+		const escHandler = (e) => {
+			if (e.key === 'Escape') popup.remove();
+		};
+		document.addEventListener('keydown', escHandler);
+
+		const observer = new MutationObserver(() => {
+			if (!document.body.contains(popup)) {
+				document.removeEventListener('keydown', escHandler);
+				observer.disconnect();
+			}
+		});
+		observer.observe(document.body, { childList: true, subtree: true });
+
+		document.body.appendChild(popup);
+
+		// Add event listener for add button
+		const addBtn = popup.querySelector('#addSistemaBtn');
+		if (addBtn) {
+			addBtn.addEventListener('click', () => {
+				openAddSistemaModal();
+			});
+		}
+
+		return popup;
+	}
+
+	// Function to open sistema view modal (read-only)
+	window.openViewSistemaModal = function(index) {
+		let sistemas = JSON.parse(localStorage.getItem('sistemas')) || [];
+		const sistema = sistemas[index];
+
+		const viewModal = document.createElement('div');
+		viewModal.className = 'view-sistema-modal';
+		viewModal.style.cssText = `
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0,0,0,0.5);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		`;
+
+		const linkHtml = sistema.href !== '#' ? `<a href="${sistema.href}" target="_blank" style="color: #007bff; text-decoration: underline;">${sistema.href}</a>` : 'Nenhum link definido';
+
+		viewModal.innerHTML = `
+			<div style="background: white; padding: 20px; border-radius: 8px; width: 450px; max-width: 90%; position: relative;">
+				<button class="close-view" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 20px; cursor: pointer;">×</button>
+				<h2>Visualizar Sistema</h2>
+				<div style="margin-bottom: 15px;">
+					<strong>Nome do Sistema:</strong><br>
+					<span>${sistema.name}</span>
+				</div>
+				<div style="margin-bottom: 15px;">
+					<strong>Link do Sistema:</strong><br>
+					<span>${linkHtml}</span>
+				</div>
+			</div>
+		`;
+
+		document.body.appendChild(viewModal);
+
+		const closeBtn = viewModal.querySelector('.close-view');
+		closeBtn.addEventListener('click', () => {
+			document.body.removeChild(viewModal);
+		});
+
+		viewModal.addEventListener('click', (e) => {
+			if (e.target === viewModal) document.body.removeChild(viewModal);
+		});
+	};
+
+	// Function to open sistema details modal (edit)
+	window.openSistemaDetailsModal = function(index) {
+		console.log('openSistemaDetailsModal called with index:', index);
+		let sistemas = JSON.parse(localStorage.getItem('sistemas')) || [];
+		const sistema = sistemas[index];
+
+		const modal = document.createElement('div');
+		modal.className = 'edit-sistema-modal';
+		modal.style.cssText = `
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0,0,0,0.5);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		`;
+
+		modal.innerHTML = `
+			<div style="background: white; padding: 20px; border-radius: 8px; width: 400px; max-width: 90%;">
+				<h3 style="margin-top: 0;">Editar Sistema</h3>
+				<div style="margin-bottom: 15px;">
+					<label for="editSistemaName" style="display: block; margin-bottom: 5px;">Nome do Sistema:</label>
+					<input type="text" id="editSistemaName" value="${sistema.name}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+				</div>
+				<div style="margin-bottom: 20px;">
+					<label for="editSistemaLink" style="display: block; margin-bottom: 5px;">Link do Sistema:</label>
+					<input type="url" id="editSistemaLink" value="${sistema.href !== '#' ? sistema.href : ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+				</div>
+				<div style="display: flex; justify-content: space-between; gap: 10px;">
+					<button id="removeSistemaBtn" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Remover</button>
+					<div>
+						<button id="cancelEditSistema" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Cancelar</button>
+						<button id="saveEditSistema" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Salvar</button>
+					</div>
+				</div>
+			</div>
+		`;
+
+		document.body.appendChild(modal);
+
+		const nameInput = modal.querySelector('#editSistemaName');
+		const linkInput = modal.querySelector('#editSistemaLink');
+		const saveBtn = modal.querySelector('#saveEditSistema');
+		const cancelBtn = modal.querySelector('#cancelEditSistema');
+		const removeBtn = modal.querySelector('#removeSistemaBtn');
+
+		const closeModal = () => {
+			document.body.removeChild(modal);
+		};
+
+		cancelBtn.addEventListener('click', closeModal);
+
+		saveBtn.addEventListener('click', () => {
+			const name = nameInput.value.trim();
+			const link = linkInput.value.trim();
+			if (name) {
+				sistemas[index] = { name: name, href: link || '#' };
+				localStorage.setItem('sistemas', JSON.stringify(sistemas));
+				closeModal();
+				// Refresh the popup
+				document.querySelector('.detail-panel').remove();
+				showSistemasPopup();
+			} else {
+				alert('Por favor, digite o nome do sistema.');
+			}
+		});
+
+		removeBtn.addEventListener('click', () => {
+			if (confirm('Tem certeza que deseja remover este sistema?')) {
+				sistemas.splice(index, 1);
+				localStorage.setItem('sistemas', JSON.stringify(sistemas));
+				closeModal();
+				// Refresh the popup
+				document.querySelector('.detail-panel').remove();
+				showSistemasPopup();
+			}
+		});
+
+		modal.addEventListener('click', (e) => {
+			if (e.target === modal) closeModal();
+		});
+
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') closeModal();
+		}, { once: true });
+	};
+
+	// Function to open add sistema modal
+	function openAddSistemaModal() {
+		const modal = document.createElement('div');
+		modal.className = 'add-sistema-modal';
+		modal.style.cssText = `
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0,0,0,0.5);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		`;
+
+		modal.innerHTML = `
+			<div style="background: white; padding: 20px; border-radius: 8px; width: 400px; max-width: 90%;">
+				<h3 style="margin-top: 0;">Adicionar Novo Sistema</h3>
+				<div style="margin-bottom: 15px;">
+					<label for="modalSistemaName" style="display: block; margin-bottom: 5px;">Nome do Sistema:</label>
+					<input type="text" id="modalSistemaName" placeholder="Digite o nome do sistema" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+				</div>
+				<div style="margin-bottom: 20px;">
+					<label for="modalSistemaLink" style="display: block; margin-bottom: 5px;">Link do Sistema:</label>
+					<input type="url" id="modalSistemaLink" placeholder="https://..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+				</div>
+				<div style="display: flex; justify-content: flex-end; gap: 10px;">
+					<button id="cancelAddSistema" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Cancelar</button>
+					<button id="saveAddSistema" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Salvar</button>
+				</div>
+			</div>
+		`;
+
+		document.body.appendChild(modal);
+
+		const nameInput = modal.querySelector('#modalSistemaName');
+		const linkInput = modal.querySelector('#modalSistemaLink');
+		const saveBtn = modal.querySelector('#saveAddSistema');
+		const cancelBtn = modal.querySelector('#cancelAddSistema');
+
+		const closeModal = () => {
+			document.body.removeChild(modal);
+		};
+
+		cancelBtn.addEventListener('click', closeModal);
+
+		saveBtn.addEventListener('click', () => {
+			const name = nameInput.value.trim();
+			const link = linkInput.value.trim();
+			if (name) {
+				let sistemas = JSON.parse(localStorage.getItem('sistemas')) || [];
+				sistemas.push({ name: name, href: link || '#' });
+				localStorage.setItem('sistemas', JSON.stringify(sistemas));
+				closeModal();
+				// Update the list in the popup
+				const ul = document.querySelector('.detail-panel ul');
+				if (ul) {
+					const renderSistemas = () => {
+						const sistemasHTML = sistemas.map((sistema, index) => {
+							const nameElement = sistema.href !== '#' ? `<a href="${sistema.href}" target="_blank" style="cursor:pointer;">${sistema.name}</a>` : `<span onclick="openSistemaDetailsModal(${index})" style="cursor:pointer;">${sistema.name}</span>`;
+							return `<li style="display: flex; justify-content: space-between; align-items: center;">${nameElement}<button onclick="openSistemaDetailsModal(${index})" style="background:#6c757d; color:#fff; border:none; padding:2px 6px; border-radius:4px; cursor:pointer; font-size:12px;">...</button></li>`;
+						}).join('');
+						return sistemasHTML;
+					};
+					ul.innerHTML = renderSistemas();
+				}
+			} else {
+				alert('Por favor, digite o nome do sistema.');
+			}
+		});
+
+		modal.addEventListener('click', (e) => {
+			if (e.target === modal) closeModal();
+		});
+
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') closeModal();
+		}, { once: true });
+	}
+
+	// Function to open planilha view modal (read-only)
+	window.openViewPlanilhaModal = function(index) {
+		let planilhas = JSON.parse(localStorage.getItem('planilhas')) || [];
+		const planilha = planilhas[index];
+
+		const viewModal = document.createElement('div');
+		viewModal.className = 'view-planilha-modal';
+		viewModal.style.cssText = `
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0,0,0,0.5);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		`;
+
+		const linkHtml = planilha.href !== '#' ? `<a href="${planilha.href}" target="_blank" style="color: #007bff; text-decoration: underline;">${planilha.href}</a>` : 'Nenhum link definido';
+
+		viewModal.innerHTML = `
+			<div style="background: white; padding: 20px; border-radius: 8px; width: 400px; max-width: 90%; position: relative;">
+				<button class="close-view" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 20px; cursor: pointer;">×</button>
+				<h2>Visualizar Planilha</h2>
+				<div style="margin-bottom: 15px;">
+					<strong>Nome da Planilha:</strong><br>
+					<span>${planilha.name}</span>
+				</div>
+				<div style="margin-bottom: 15px;">
+					<strong>Link da Planilha:</strong><br>
+					<span>${linkHtml}</span>
+				</div>
+			</div>
+		`;
+
+		document.body.appendChild(viewModal);
+
+		const closeBtn = viewModal.querySelector('.close-view');
+		closeBtn.addEventListener('click', () => {
+			document.body.removeChild(viewModal);
+		});
+
+		viewModal.addEventListener('click', (e) => {
+			if (e.target === viewModal) document.body.removeChild(viewModal);
+		});
+	};
+
+	// Function to open planilha details modal (edit)
+	window.openPlanilhaDetailsModal = function(index) {
+		let planilhas = JSON.parse(localStorage.getItem('planilhas')) || [];
+		const planilha = planilhas[index];
+
+		const modal = document.createElement('div');
+		modal.className = 'edit-planilha-modal';
+		modal.style.cssText = `
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0,0,0,0.5);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		`;
+
+		modal.innerHTML = `
+			<div style="background: white; padding: 20px; border-radius: 8px; width: 400px; max-width: 90%;">
+				<h3 style="margin-top: 0;">Editar Planilha</h3>
+				<div style="margin-bottom: 15px;">
+					<label for="editPlanilhaName" style="display: block; margin-bottom: 5px;">Nome da Planilha:</label>
+					<input type="text" id="editPlanilhaName" value="${planilha.name}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+				</div>
+				<div style="margin-bottom: 20px;">
+					<label for="editPlanilhaLink" style="display: block; margin-bottom: 5px;">Link da Planilha:</label>
+					<input type="url" id="editPlanilhaLink" value="${planilha.href !== '#' ? planilha.href : ''}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+				</div>
+				<div style="display: flex; justify-content: space-between; gap: 10px;">
+					<button id="removePlanilhaBtn" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Remover</button>
+					<div>
+						<button id="cancelEditPlanilha" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Cancelar</button>
+						<button id="saveEditPlanilha" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Salvar</button>
+					</div>
+				</div>
+			</div>
+		`;
+
+		document.body.appendChild(modal);
+
+		const nameInput = modal.querySelector('#editPlanilhaName');
+		const linkInput = modal.querySelector('#editPlanilhaLink');
+		const saveBtn = modal.querySelector('#saveEditPlanilha');
+		const cancelBtn = modal.querySelector('#cancelEditPlanilha');
+		const removeBtn = modal.querySelector('#removePlanilhaBtn');
+
+		const closeModal = () => {
+			document.body.removeChild(modal);
+		};
+
+		cancelBtn.addEventListener('click', closeModal);
+
+		saveBtn.addEventListener('click', () => {
+			const name = nameInput.value.trim();
+			const link = linkInput.value.trim();
+			if (name) {
+				planilhas[index] = { name: name, href: link || '#' };
+				localStorage.setItem('planilhas', JSON.stringify(planilhas));
+				closeModal();
+				// Refresh the popup
+				document.querySelector('.detail-panel').remove();
+				showPlanilhasPopup();
+			} else {
+				alert('Por favor, digite o nome da planilha.');
+			}
+		});
+
+		removeBtn.addEventListener('click', () => {
+			if (confirm('Tem certeza que deseja remover esta planilha?')) {
+				planilhas.splice(index, 1);
+				localStorage.setItem('planilhas', JSON.stringify(planilhas));
+				closeModal();
+				// Refresh the popup
+				document.querySelector('.detail-panel').remove();
+				showPlanilhasPopup();
+			}
+		});
+
+		modal.addEventListener('click', (e) => {
+			if (e.target === modal) closeModal();
+		});
+
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') closeModal();
+		}, { once: true });
+	};
+
+	function showProcessosPopup() {
+		let processosAnexos = JSON.parse(localStorage.getItem('processosAnexos')) || [
+			{ name: 'Tratamento de Vistorias', href: 'Tratamento_Vistorias.pdf' }
+		];
+
+		const popup = document.createElement('div');
+		popup.className = 'detail-panel';
+		popup.setAttribute('aria-hidden', 'false');
+
+		const openCount = document.querySelectorAll('.detail-panel[aria-hidden="false"]').length;
+		const offset = (openCount % 6) * 30; // px
+		popup.style.left = `calc(50% + ${offset}px)`;
+		popup.style.top = `calc(50% + ${offset}px)`;
+
+	const renderAnexos = () => {
+		const anexosHTML = processosAnexos.map((anexo, index) => {
+			const nameElement = `<span onclick="openViewProcessoModal(${index})" style="cursor:pointer;">${anexo.name}</span>`;
+			return `<div class="processo-container" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; background: #f9f9f9; width: 100%;">${nameElement}<button onclick="openProcessoDetailsModal(${index})" style="background:#6c757d; color:#fff; border:none; padding:2px 6px; border-radius:4px; cursor:pointer; font-size:12px;">...</button></div>`;
+		}).join('');
+		return anexosHTML;
+	};
+
+		popup.innerHTML = `
+			<button class="close-detail">×</button>
+			<div class="detail-content">
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+					<h2>Processos</h2>
+					<button id="addProcessoAnexoBtn" style="background:#28a745; color:#fff; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">Adicionar Anexo</button>
+				</div>
+			<ul style="list-style: none; padding: 0; display: flex; flex-direction: column; align-items: center;">${renderAnexos()}</ul>
+			</div>
+		`;
+
+		popup.querySelector('.close-detail').addEventListener('click', () => {
+			popup.remove();
+		});
+
+		const escHandler = (e) => {
+			if (e.key === 'Escape') popup.remove();
+		};
+		document.addEventListener('keydown', escHandler);
+
+		const observer = new MutationObserver(() => {
+			if (!document.body.contains(popup)) {
+				document.removeEventListener('keydown', escHandler);
+				observer.disconnect();
+			}
+		});
+		observer.observe(document.body, { childList: true, subtree: true });
+
+		document.body.appendChild(popup);
+
+		// Add event listener for add button
+		const addBtn = popup.querySelector('#addProcessoAnexoBtn');
+		addBtn.addEventListener('click', () => {
+			const fileInput = document.createElement('input');
+			fileInput.type = 'file';
+			fileInput.style.display = 'none';
+			fileInput.onchange = (event) => {
+				const files = Array.from(event.target.files);
+				if (files.length > 0) {
+					const file = files[0];
+					const reader = new FileReader();
+					reader.onload = () => {
+						processosAnexos.push({
+							name: file.name,
+							href: reader.result
+						});
+						localStorage.setItem('processosAnexos', JSON.stringify(processosAnexos));
+						// Update the list
+						const ul = popup.querySelector('ul');
+						ul.innerHTML = renderAnexos();
+					};
+					reader.readAsDataURL(file);
+				}
+				document.body.removeChild(fileInput);
+			};
+			document.body.appendChild(fileInput);
+			fileInput.click();
+		});
+
+		return popup;
+	}
+
+	// Function to open processo view modal (read-only)
+	window.openViewProcessoModal = function(index) {
+		let processosAnexos = JSON.parse(localStorage.getItem('processosAnexos')) || [];
+		const anexo = processosAnexos[index];
+
+		const viewModal = document.createElement('div');
+		viewModal.className = 'view-processo-modal';
+		viewModal.style.cssText = `
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0,0,0,0.5);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		`;
+
+		const linkHtml = anexo.href.startsWith('data:') ? `<a href="${anexo.href}" download="${anexo.name}" style="color: #007bff; text-decoration: underline;">Download ${anexo.name}</a>` : `<a href="${anexo.href}" target="_blank" style="color: #007bff; text-decoration: underline;">${anexo.href}</a>`;
+
+		viewModal.innerHTML = `
+			<div style="background: white; padding: 20px; border-radius: 8px; width: 450px; max-width: 90%; position: relative;">
+				<button class="close-view" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 20px; cursor: pointer;">×</button>
+				<h2>Visualizar Processo</h2>
+				<div style="margin-bottom: 15px;">
+					<strong>Nome do Anexo:</strong><br>
+					<span>${anexo.name}</span>
+				</div>
+				<div style="margin-bottom: 15px;">
+					<strong>Link/Anexo:</strong><br>
+					<span>${linkHtml}</span>
+				</div>
+			</div>
+		`;
+
+		document.body.appendChild(viewModal);
+
+		const closeBtn = viewModal.querySelector('.close-view');
+		closeBtn.addEventListener('click', () => {
+			document.body.removeChild(viewModal);
+		});
+
+		viewModal.addEventListener('click', (e) => {
+			if (e.target === viewModal) document.body.removeChild(viewModal);
+		});
+	};
+
+	// Function to open processo details modal (edit)
+	window.openProcessoDetailsModal = function(index) {
+		let processosAnexos = JSON.parse(localStorage.getItem('processosAnexos')) || [];
+		const anexo = processosAnexos[index];
+
+		const modal = document.createElement('div');
+		modal.className = 'edit-processo-modal';
+		modal.style.cssText = `
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0,0,0,0.5);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		`;
+
+		modal.innerHTML = `
+			<div style="background: white; padding: 20px; border-radius: 8px; width: 400px; max-width: 90%;">
+				<h3 style="margin-top: 0;">Editar Processo</h3>
+				<div style="margin-bottom: 15px;">
+					<label for="editProcessoName" style="display: block; margin-bottom: 5px;">Nome do Anexo:</label>
+					<input type="text" id="editProcessoName" value="${anexo.name}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+				</div>
+				<div style="margin-bottom: 20px;">
+					<label for="editProcessoLink" style="display: block; margin-bottom: 5px;">Link do Anexo:</label>
+					<input type="text" id="editProcessoLink" value="${anexo.href}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+				</div>
+				<div style="display: flex; justify-content: space-between; gap: 10px;">
+					<button id="removeProcessoBtn" style="background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Remover</button>
+					<div>
+						<button id="cancelEditProcesso" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Cancelar</button>
+						<button id="saveEditProcesso" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Salvar</button>
+					</div>
+				</div>
+			</div>
+		`;
+
+		document.body.appendChild(modal);
+
+		const nameInput = modal.querySelector('#editProcessoName');
+		const linkInput = modal.querySelector('#editProcessoLink');
+		const saveBtn = modal.querySelector('#saveEditProcesso');
+		const cancelBtn = modal.querySelector('#cancelEditProcesso');
+		const removeBtn = modal.querySelector('#removeProcessoBtn');
+
+		const closeModal = () => {
+			document.body.removeChild(modal);
+		};
+
+		cancelBtn.addEventListener('click', closeModal);
+
+		saveBtn.addEventListener('click', () => {
+			const name = nameInput.value.trim();
+			const link = linkInput.value.trim();
+			if (name) {
+				processosAnexos[index] = { name: name, href: link };
+				localStorage.setItem('processosAnexos', JSON.stringify(processosAnexos));
+				closeModal();
+				// Refresh the popup
+				document.querySelector('.detail-panel').remove();
+				showProcessosPopup();
+			} else {
+				alert('Por favor, digite o nome do anexo.');
+			}
+		});
+
+		removeBtn.addEventListener('click', () => {
+			if (confirm('Tem certeza que deseja remover este anexo?')) {
+				processosAnexos.splice(index, 1);
+				localStorage.setItem('processosAnexos', JSON.stringify(processosAnexos));
+				closeModal();
+				// Refresh the popup
+				document.querySelector('.detail-panel').remove();
+				showProcessosPopup();
+			}
+		});
+
+		modal.addEventListener('click', (e) => {
+			if (e.target === modal) closeModal();
+		});
+
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') closeModal();
+		}, { once: true });
+	};
+
+	// Function to remove processo anexo
+	window.removeProcessoAnexo = function(index) {
+		let processosAnexos = JSON.parse(localStorage.getItem('processosAnexos')) || [];
+		processosAnexos.splice(index, 1);
+		localStorage.setItem('processosAnexos', JSON.stringify(processosAnexos));
+		// Reopen popup to update
+		document.querySelector('.detail-panel').remove();
+		showProcessosPopup();
+	};
+
+	// Function to open add planilha modal
+	function openAddPlanilhaModal() {
+		const modal = document.createElement('div');
+		modal.className = 'add-planilha-modal';
+		modal.style.cssText = `
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0,0,0,0.5);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		`;
+
+		modal.innerHTML = `
+			<div style="background: white; padding: 20px; border-radius: 8px; width: 400px; max-width: 90%;">
+				<h3 style="margin-top: 0;">Adicionar Nova Planilha</h3>
+				<div style="margin-bottom: 15px;">
+					<label for="modalPlanilhaName" style="display: block; margin-bottom: 5px;">Nome da Planilha:</label>
+					<input type="text" id="modalPlanilhaName" placeholder="Digite o nome da planilha" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+				</div>
+				<div style="margin-bottom: 20px;">
+					<label for="modalPlanilhaLink" style="display: block; margin-bottom: 5px;">Link da Planilha:</label>
+					<input type="url" id="modalPlanilhaLink" placeholder="https://..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+				</div>
+				<div style="display: flex; justify-content: flex-end; gap: 10px;">
+					<button id="cancelAddPlanilha" style="background: #6c757d; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Cancelar</button>
+					<button id="saveAddPlanilha" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Salvar</button>
+				</div>
+			</div>
+		`;
+
+		document.body.appendChild(modal);
+
+		const nameInput = modal.querySelector('#modalPlanilhaName');
+		const linkInput = modal.querySelector('#modalPlanilhaLink');
+		const saveBtn = modal.querySelector('#saveAddPlanilha');
+		const cancelBtn = modal.querySelector('#cancelAddPlanilha');
+
+		const closeModal = () => {
+			document.body.removeChild(modal);
+		};
+
+		cancelBtn.addEventListener('click', closeModal);
+
+		saveBtn.addEventListener('click', () => {
+			const name = nameInput.value.trim();
+			const link = linkInput.value.trim();
+			if (name) {
+				let planilhas = JSON.parse(localStorage.getItem('planilhas')) || [];
+				planilhas.push({ name: name, href: link || '#' });
+				localStorage.setItem('planilhas', JSON.stringify(planilhas));
+				closeModal();
+				// Update the list in the popup
+				const ul = document.querySelector('.detail-panel ul');
+				if (ul) {
+					const renderPlanilhas = () => {
+						const planilhasHTML = planilhas.map((planilha, index) => {
+							const nameElement = planilha.href !== '#' ? `<a href="${planilha.href}" target="_blank" style="cursor:pointer;">${planilha.name}</a>` : `<span onclick="openPlanilhaDetailsModal(${index})" style="cursor:pointer;">${planilha.name}</span>`;
+							return `<li style="display: flex; justify-content: space-between; align-items: center;">${nameElement}<button onclick="openPlanilhaDetailsModal(${index})" style="background:#6c757d; color:#fff; border:none; padding:2px 6px; border-radius:4px; cursor:pointer; font-size:12px;">...</button></li>`;
+						}).join('');
+						return planilhasHTML;
+					};
+					ul.innerHTML = renderPlanilhas();
+				}
+			} else {
+				alert('Por favor, digite o nome da planilha.');
+			}
+		});
+
+		modal.addEventListener('click', (e) => {
+			if (e.target === modal) closeModal();
+		});
+
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') closeModal();
+		}, { once: true });
+	}
+
+	// Function to add planilha
+	window.addPlanilha = function() {
+		const nameInput = document.getElementById('planilhaName');
+		const linkInput = document.getElementById('planilhaLink');
+		const name = nameInput ? nameInput.value.trim() : '';
+		const link = linkInput ? linkInput.value.trim() : '';
+		if (name) {
+			let planilhas = JSON.parse(localStorage.getItem('planilhas')) || [];
+			planilhas.push({ name: name, href: link || '#' });
+			localStorage.setItem('planilhas', JSON.stringify(planilhas));
+			if (nameInput) nameInput.value = '';
+			if (linkInput) linkInput.value = '';
+			// Update the list in the popup
+			const ul = document.querySelector('.detail-panel ul');
+			if (ul) {
+				const renderPlanilhas = () => {
+					const planilhasHTML = planilhas.map((planilha, index) => {
+						if (planilha.href === '#') {
+							return `<li style="display: flex; justify-content: space-between; align-items: center;"><span>${planilha.name}</span><button onclick="removePlanilha(${index})" style="background:#e74c3c; color:#fff; border:none; padding:2px 6px; border-radius:4px; cursor:pointer; font-size:12px;">Remover</button></li>`;
+						} else {
+							return `<li style="display: flex; justify-content: space-between; align-items: center;"><a href="${planilha.href}" target="_blank">${planilha.name}</a><button onclick="removePlanilha(${index})" style="background:#e74c3c; color:#fff; border:none; padding:2px 6px; border-radius:4px; cursor:pointer; font-size:12px;">Remover</button></li>`;
+						}
+					}).join('');
+					return planilhasHTML;
+				};
+				ul.innerHTML = renderPlanilhas();
+			}
+		}
+	};
+
+	// Function to remove planilha
+	window.removePlanilha = function(index) {
+		let planilhas = JSON.parse(localStorage.getItem('planilhas')) || [];
+		planilhas.splice(index, 1);
+		localStorage.setItem('planilhas', JSON.stringify(planilhas));
+		// Reopen popup to update
+		document.querySelector('.detail-panel').remove();
+		showPlanilhasPopup();
+	};
+
 	containers.forEach((c) => {
 		const href = c.dataset.href;
-		c.addEventListener('click', () => {
+	c.addEventListener('click', () => {
+			console.log('Container clicked:', c.dataset.title || c.innerText.trim());
+        const title = c.dataset.title || c.innerText.trim();
+        if (title === 'Sistemas') {
+            console.log('Calling showSistemasPopup');
+            showSistemasPopup();
+            return;
+        }
+        if (title === 'Processos') {
+            showProcessosPopup();
+            return;
+        }
 			if (href) {
 				window.location.href = href;
 				return;
 			}
-			const title = c.dataset.title || c.innerText.trim();
+			if (title === 'Planilhas') {
+				console.log('Calling showPlanilhasPopup');
+				showPlanilhasPopup();
+				return;
+			}
 			const detail = c.dataset.detail || (title + ' — informações detalhadas aqui.');
 			createDetailPanel(title, detail);
 		});
@@ -1018,15 +1924,26 @@ document.addEventListener('DOMContentLoaded', function () {
 		c.addEventListener('keydown', (e) => {
 			if (e.key === 'Enter' || e.key === ' ') {
 				e.preventDefault();
+				const title = c.dataset.title || c.innerText.trim();
+				if (title === 'Processos') {
+					showProcessosPopup();
+					return;
+				}
+				if (title === 'Sistemas') {
+					showSistemasPopup();
+					return;
+				}
 				if (href) {
 					window.location.href = href;
 				} else {
-					const title = c.dataset.title || c.innerText.trim();
+					if (title === 'Planilhas') {
+						showPlanilhasPopup();
+						return;
+					}
 					const detail = c.dataset.detail || (title + ' — informações detalhadas aqui.');
 					createDetailPanel(title, detail);
 				}
 			}
 		});
 	});
-});
 

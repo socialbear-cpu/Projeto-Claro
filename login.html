@@ -11,8 +11,6 @@
         <div class="login-header">
             <h1>Portal MDU</h1>
             <p>Sistema de Gerenciamento</p>
-            <button class="back-btn" onclick="window.location.href='front.html'">Voltar ao Início</button>
-            <button id="menuBtn" class="menu-btn">☰ Menu</button>
         </div>
 
         <div id="errorMessage" class="error-message"></div>
@@ -121,12 +119,31 @@
                     throw new Error('Email inválido');
                 }
 
-                // Simulate a small delay for user feedback
-                await new Promise(r => setTimeout(r, 1000));
+                // Load users from localStorage
+                let users = [];
+                try {
+                    const s = localStorage.getItem('users');
+                    users = s ? JSON.parse(s) : [];
+                } catch (e) {
+                    users = [];
+                }
 
-                // Store user in localStorage
+                // Check if user exists and password matches
+                const user = users.find(u => u.email === email && u.password === password && u.status === 'Ativo');
+                if (!user) {
+                    throw new Error('Email ou senha incorretos, ou usuário inativo');
+                }
+
+                // Update last login
+                user.lastLogin = new Date().toISOString();
+                localStorage.setItem('users', JSON.stringify(users));
+
+                // Store current user in localStorage with role
                 localStorage.setItem('currentUser', JSON.stringify({
-                    email: email,
+                    email: user.email,
+                    name: user.name,
+                    role: user.role,
+                    epo: user.epo,
                     loginMethod: 'email',
                     timestamp: new Date().toISOString()
                 }));

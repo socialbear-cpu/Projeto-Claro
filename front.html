@@ -1,67 +1,63 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <meta charset='utf-8'>
-    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>App.test</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
-    <script src='main.js'></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" media="screen" href="main.css">
 </head>
 <body>
-    <div class="header">
+    <header class="header">
         <img src="logo.png" alt="Logo" class="header-logo">
-        <p>Consulta MDU</p>
-    </div>
-    <div class="principal">
-        <div class="top-bar">
-            <button class="menu-btn" id="menuBtn">☰ Menu</button>
-        </div>
+        <p>Portal MDU</p>
+        <button class="menu-btn" id="menuBtn">☰ Menu</button>
+    </header>
+    <main class="principal">
         <div class="sidebar-menu" id="sidebarMenu">
             <button class="close-menu" id="closeMenu">×</button>
             <nav>
-                <a href="#home">Home</a>
-                <a href="#documentos">Documentos</a>
-                <a href="#relatorios">Relatórios</a>
-                <a href="#configuracoes">Configurações</a>
+                <a href="front.html">Home</a>
+                <a href="controle_e.html">Controle EPO</a>
+                <a href="ger_login.html">Gerenciar Logins</a>
             </nav>
         </div>
-        <div class="sub-principal">
-            <div class="container" 
-            data-title="Planilhas" 
-            data-detail=
-            "Aqui estão as planilhas e modelos disponíveis."
-            >
+        <section class="sub-principal">
+            <div class="container"
+                 data-title="Planilhas"
+                 data-detail="Aqui estão as planilhas e modelos disponíveis.">
                 <p>PLANILHAS</p>
             </div>
-            <div class="container" data-title="Processos" data-detail="Lista de processos com status e responsáveis.">
+            <div class="container"
+                 data-title="Processos"
+                 data-detail="Lista de processos com status e responsáveis.&#10;&#10;<b>Anexo:</b> Documentos relacionados aos processos.&#10;&#10;<b>Tratamento de Vistorias:</b> Gerenciamento e acompanhamento de inspeções."
+                 data-href="Tratamento_Vistorias.pdf"
+                 role="link"
+                 tabindex="0">
                 <p>PROCESSOS</p>
             </div>
-            <div class="container" 
-            data-title="Sistemas" 
-            data-detail="Acesso aos sistemas integrados e manuais.&#10;&#10;<b>SGD:</b>&#10;https://sgd.claro.com.br/auth/&#10;&#10;<b>CITRIX:</b>&#10;https://netsmsapp.claro.com.br/&#10;&#10;<b>NET-HP:</b>&#10;https://nethp.claro.com.br/&#10;&#10;<b>IDM:</b>&#10;https://idmbr.claro.com.br/"
-            >
+            <div class="container"
+                 data-title="Sistemas"
+                 data-detail="Acesso aos sistemas integrados e manuais.&#10;&#10;<b>SGD:</b>&#10;https://sgd.claro.com.br/auth/&#10;&#10;<b>CITRIX:</b>&#10;https://netsmsapp.claro.com.br/&#10;&#10;<b>NET-HP:</b>&#10;https://nethp.claro.com.br/&#10;&#10;<b>IDM:</b>&#10;https://idmbr.claro.com.br/">
                 <p>SISTEMAS</p>
             </div>
-            <div class="container" data-title="Controle EPO" data-detail="Ferramentas e registros de controle EPO." data-href="controle_e.html" role="link" tabindex="0">
+            <div class="container"
+                 data-title="Controle EPO"
+                 data-detail="Ferramentas e registros de controle EPO."
+                 data-href="controle_e.html"
+                 role="link"
+                 tabindex="0">
                 <p>CONTROLE EPO</p>
             </div>
-            <div class="container" data-title="Sistemas" data-detail="Acesso aos sistemas integrados e manuais.">
-                <p>SISTEMAS</p>
-            </div>
-            <div class="container" data-title="Controle EPO" data-detail="Ferramentas e registros de controle EPO." data-href="controle_e.html" role="link" tabindex="0">
-                <p>CONTROLE EPO</p>
-            </div>
-
-        </div>
-
-        <div class="detail-panel" id="detailPanel" aria-hidden="true">
+        </section>
+        <aside class="detail-panel" id="detailPanel" aria-hidden="true">
             <button class="close-detail" id="closeDetail">×</button>
             <div class="detail-content" id="detailContent">Detalhes aqui</div>
-        </div>
-    </div>
-    <div class="footer">
-        TESTANDO
-    </div>        
+        </aside>
+    </main>
+    <footer class="footer">
+        © 2025 Portal MDU - Todos os direitos reservados
+    </footer>
+    <script src="main.js"></script>
 </body>
 </html>

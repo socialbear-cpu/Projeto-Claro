@@ -113,7 +113,6 @@
         </div>
     </div>
 
-    <script src="./main.js"></script>
     <script>
         // ============================================================
         // GERENCIAMENTO DE LOGINS COM FILTRO POR EPO
@@ -366,7 +365,8 @@
                         <div class="form-group">
                             <label>EPO (opcional para Admin)</label>
                             <select name="epo">
-                                <option value="">Sem EPO atribuída</option>
+                                <option value="">Selecione uma EPO (opcional para Admin)</option>
+                                <option value="RMS" ${user.epo === 'RMS' ? 'selected' : ''}>RMS</option>
                                 <option value="INOVA" ${user.epo === 'INOVA' ? 'selected' : ''}>INOVA</option>
                                 <option value="MVVS" ${user.epo === 'MVVS' ? 'selected' : ''}>MVVS</option>
                                 <option value="TELMINAS" ${user.epo === 'TELMINAS' ? 'selected' : ''}>TELMINAS</option>
@@ -477,7 +477,7 @@
             const status = document.getElementById('userStatus').value;
             const notes = document.getElementById('userNotes').value.trim();
 
-            if (!name || !email || !password || !role || !epo || !status) {
+            if (!name || !email || !password || !role || (!epo && role !== 'Admin') || !status) {
                 alert('Preencha todos os campos obrigatórios');
                 return;
             }
@@ -534,6 +534,30 @@
         initializeSampleUsers();
         populateEpoFilters();
         renderUsers(allUsers);
+
+        // Menu functionality
+        const menuBtn = document.getElementById('menuBtn');
+        const sidebarMenu = document.getElementById('sidebarMenu');
+        const closeMenu = document.getElementById('closeMenu');
+
+        if (menuBtn && sidebarMenu) {
+            menuBtn.addEventListener('click', () => {
+                sidebarMenu.classList.toggle('open');
+            });
+        }
+
+        if (closeMenu && sidebarMenu) {
+            closeMenu.addEventListener('click', () => {
+                sidebarMenu.classList.remove('open');
+            });
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (sidebarMenu && !sidebarMenu.contains(e.target) && e.target !== menuBtn) {
+                sidebarMenu.classList.remove('open');
+            }
+        });
     </script>
 
     <div class="footer">

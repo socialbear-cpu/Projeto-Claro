@@ -1,4 +1,4 @@
-﻿﻿﻿﻿* {
+﻿﻿* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -23,6 +23,7 @@ body {
     height: 80px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     padding: 0 25px;
     box-sizing: border-box;
 }
@@ -372,8 +373,8 @@ body {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    width: 80%;
-    max-width: 600px;
+    width: 100%;
+    max-width: 800px;
     background: #ffffff;
     border-radius: 12px;
     box-shadow: 0 15px 40px rgba(0,0,0,0.3);
@@ -418,6 +419,7 @@ body {
 
 .detail-content {
     margin-top: 15px;
+    width: 100%;
 }
 
 .detail-panel h2 {
